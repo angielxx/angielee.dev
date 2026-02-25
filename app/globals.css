@@ -5,6 +5,19 @@
   --color-foreground: var(--fg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* 브랜드 컬러 Tailwind 유틸리티 */
+  --color-brand-50:  var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-900: var(--brand-900);
+  --color-accent:    var(--accent);
+  --color-link:      var(--link);
+  --color-muted:     var(--muted);
+  --color-border:    var(--border);
 }
 
 /* ── 라이트 모드 ─────────────────────────────────── */
@@ -17,6 +30,21 @@
   --pre-bg: #1a1a1a;
   --pre-fg: #e5e7eb;
   --prose-body: #374151;
+
+  /* 브랜드 컬러 */
+  --brand-50:  #f0fdf4;
+  --brand-100: #dcfce7;
+  --brand-200: #bbf7d0;
+  --brand-500: #16a34a;
+  --brand-600: #15803d;
+  --brand-700: #166534;
+  --brand-900: #14532d;
+
+  /* 시맨틱 별칭 */
+  --accent:   var(--brand-500);
+  --link:     var(--brand-600);
+  --tag-bg:   var(--brand-100);
+  --tag-text: var(--brand-700);
 }
 
 /* ── 다크 모드 ─────────────────────────────────── */
@@ -30,6 +58,30 @@
     --pre-bg: #161616;
     --pre-fg: #d1d5db;
     --prose-body: #d1d5db;
+
+    /* 다크 브랜드 컬러 */
+    --brand-50:  #052e16;
+    --brand-100: #052e16;
+    --brand-200: #14532d;
+    --brand-500: #4ade80;
+    --brand-600: #4ade80;
+    --brand-700: #86efac;
+    --brand-900: #bbf7d0;
+
+    /* 다크 시맨틱 별칭 */
+    --accent:   #4ade80;
+    --link:     #4ade80;
+    --tag-bg:   #052e16;
+    --tag-text: #86efac;
+  }
+}
+
+/* prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
