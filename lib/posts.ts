@@ -1,10 +1,9 @@
 import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
-
-// ── 타입 정의 ─────────────────────────────────────
-
-export type Category = "프론트엔드" | "회고" | "일상" | "독서";
+export type { Category } from "@/lib/categories";
+export { CATEGORIES, CATEGORY_GROUPS } from "@/lib/categories";
+import type { Category } from "@/lib/categories";
 
 export interface PostMeta {
   slug: string;
@@ -27,13 +26,6 @@ export interface Post extends PostMeta {
 
 const POSTS_DIR = path.join(process.cwd(), "posts");
 const KO_CHARS_PER_MIN = 500;
-
-export const CATEGORIES: Category[] = ["프론트엔드", "회고", "일상", "독서"];
-
-export const CATEGORY_GROUPS: Record<string, Category[]> = {
-  개발: ["프론트엔드", "회고"],
-  개인: ["일상", "독서"],
-};
 
 // ── 유틸 ─────────────────────────────────────────
 
