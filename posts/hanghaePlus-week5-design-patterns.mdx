@@ -1,36 +1,31 @@
 ---
 title: "항해플러스 프론트엔드 6기 5주차 : 디자인 패턴과 함수형 프로그래밍 (feat. BP 받음)"
-description: "5주차 과제는 지금까지 진행한 과제 중 가장 시간을 적게 투자했지만, 동시에 가장 이를 악물고 ‘제대로’ 해보고 싶었던 과제였다.4주차 과제에서는 AI 개입도가 높았는데, 그 영향으로 내 코드에 대한 통제력이 떨어졌다는 불편함을 강하게 느꼈다.결국 코드에 대한 자..."
+description: "4주차에서 AI에게 코드 주도권을 넘겼던 반성에서 출발한 5주차. 'AI는 조언자, 코드는 내가 통제한다'는 원칙 아래 폴더 구조 리팩토링, 공통 컴포넌트 설계, NotificationBoundary 패턴까지 실천한 과정과 KPT 회고."
 date: "2025-08-10"
 category: "회고"
 tags: ["항해플러스"]
 ---
 
-5주차 과제는 지금까지 진행한 과제 중 가장 시간을 적게 투자했지만, 동시에 가장 이를 악물고 ‘제대로’ 해보고 싶었던 과제였다.  
-4주차 과제에서는 AI 개입도가 높았는데, 그 영향으로 내 코드에 대한 통제력이 떨어졌다는 불편함을 강하게 느꼈다.  
-결국 코드에 대한 자신감 하락과 과제 결과물에 대한 불만족으로 이어졌다.  
-   
-AI가 과제를 하는 느낌은 항해를 하는 것 자체에 대한 회의감으로 이어졌다.  
- 
+5주차 과제는 지금까지 진행한 과제 중 가장 시간을 적게 투자했지만, 동시에 가장 이를 악물고 '제대로' 해보고 싶었던 과제였다.
+
+4주차 과제에서는 AI 개입도가 높았는데, 그 영향으로 내 코드에 대한 통제력이 떨어졌다는 불편함을 강하게 느꼈다. 결국 코드에 대한 자신감 하락과 과제 결과물에 대한 불만족으로 이어졌다.
+
+AI가 과제를 하는 느낌은 항해를 하는 것 자체에 대한 회의감으로 이어졌다.
+
 ![](/images/tistory/hanghaePlus-week5-design-patterns/8edb43a8af79.jpg)
 
 > 내가 지금 일주일에 10만원이 넘는 돈을 지불하면서 AI가 과제를 하고 있다니 이게 뭐하는 짓이지?
-   
-그 생각이 들자, 남은 6주는 절대 이런 식으로 보내지 않겠다고 결심했다.  
-어떻게 하면 항해 과정을 100%, 아니 200% 활용해서 온전히 ‘내 것’으로 만들 수 있을지 고민했다.  
- 
+
+그 생각이 들자, 남은 6주는 절대 이런 식으로 보내지 않겠다고 결심했다. 어떻게 하면 항해 과정을 100%, 아니 200% 활용해서 온전히 '내 것'으로 만들 수 있을지 고민했다.
+
+---
+
 ## 과제 목표 설정 – 마음가짐부터
- 
-  
-  
-과제를 시작하며 docs 폴더에 ‘이번 과제의 목표’를 적어 넣었다.
- 
-  
-마치 선서하듯 마음속에 새기고 시작했다.
- 
-  
+
+과제를 시작하며 docs 폴더에 '이번 과제의 목표'를 적어 넣었다. 마치 선서하듯 마음속에 새기고 시작했다.
+
 ```
-`🤖 AI 활용 전략
+🤖 AI 활용 전략
 
 AI를 코딩 자문으로 활용: 모든 코딩을 AI에게 맡기지 않고 적절한 역할 분담
 작업 분담 명확화: 내가 할 일과 AI가 할 일을 구분하여 효율적으로 진행
@@ -45,117 +40,84 @@ AI를 코딩 자문으로 활용: 모든 코딩을 AI에게 맡기지 않고 적
 실습을 통한 체득: 과제를 통해 느껴야 하는 것들을 충분히 느끼고 이해하기
 경험 축적: 실제 리팩토링 과정에서 얻는 인사이트와 노하우 습득
 과정 중심 학습: 과제의 통과 여부의 결론보다는 과정을 통해 배우기
-다른 항해러 코드 모두 읽기`
+다른 항해러 코드 모두 읽기
 ```
- 
-  
- 
+
 ### 1. AI 활용 전략: 내 코드는 내가 통제한다
-이번 주의 핵심은 **내 코드는 내가 통제한다**였다.  
-AI가 할 일과 내가 할 일을 명확하게 나누고, 내가 AI를 컨트롤하면서도 내 코드 역시 완전히 이해하고 통제할 수 있도록 했다.  
-설계와 구현에서 AI는 ‘조언자’ 역할로만 두었고, 실제 코드 작성은 내가 직접 했다.  
-   
-이걸 실행하려면 먼저 **마음을 조급하게 먹지 않는 것**이 중요했다.  
-마음이 급해지면 눈에 보이는 결과를 빨리 얻고 싶어서 “AI야, 이거 해줘”라는 말이 절로 나오기 때문이다.  
-   
-테오 멘토링에서 나눴던 고민도 떠올랐다.  
-회사에서는 일정이 촉박하다 보니, 깊이 고민하고 설계하기보다 손부터 나가는 습관이 있었다.  
-그 때문에 조급한 상황 속에서 깔끔한 코드를 작성하거나 새로운 개념을 시도하는 것이 어려웠다.  
-   
-테오의 대답은 간단했다.  
- 
-> “지금도 시간 없는 와중에 공부하고, 고민하고, 코드 깔끔하게 짜려고 하잖아요. 충분히 시간 있네요. 그걸 여기서 느껴야 해요.”
-  
- 
+
+이번 주의 핵심은 **내 코드는 내가 통제한다**였다. AI가 할 일과 내가 할 일을 명확하게 나누고, 내가 AI를 컨트롤하면서도 내 코드 역시 완전히 이해하고 통제할 수 있도록 했다. 설계와 구현에서 AI는 '조언자' 역할로만 두었고, 실제 코드 작성은 내가 직접 했다.
+
+이걸 실행하려면 먼저 **마음을 조급하게 먹지 않는 것**이 중요했다. 마음이 급해지면 눈에 보이는 결과를 빨리 얻고 싶어서 "AI야, 이거 해줘"라는 말이 절로 나오기 때문이다.
+
+테오 멘토링에서 나눴던 고민도 떠올랐다. 회사에서는 일정이 촉박하다 보니, 깊이 고민하고 설계하기보다 손부터 나가는 습관이 있었다. 그 때문에 조급한 상황 속에서 깔끔한 코드를 작성하거나 새로운 개념을 시도하는 것이 어려웠다.
+
+테오의 대답은 간단했다.
+
+> "지금도 시간 없는 와중에 공부하고, 고민하고, 코드 깔끔하게 짜려고 하잖아요. 충분히 시간 있네요. 그걸 여기서 느껴야 해요."
+
 ![](/images/tistory/hanghaePlus-week5-design-patterns/28e20b141e3a.jpg)
 
-   
-그 말에 머리가 ‘띵’ 하고 맞은 것 같았다.  
-그래서 이번 과제에서는 밤을 새우는 상황이더라도 중심을 잃지 않았다.  
-급하다고 AI에게 외주 주지 않고, 끝까지 내 손으로 과제를 완수하기 위해 노력했다.  
-  
- 
+그 말에 머리가 '띵' 하고 맞은 것 같았다. 그래서 이번 과제에서는 밤을 새우는 상황이더라도 중심을 잃지 않았다. 급하다고 AI에게 외주 주지 않고, 끝까지 내 손으로 과제를 완수하기 위해 노력했다.
+
 ### 2. 문서화 개선: 과제의 결론보다는 과정을 통해 배우기
-항해를 4주 동안 진행하며, 이력서나 블로그 글처럼 ‘결과 위주’로만 쓰는 내 습관을 깨달았다.  
-왜 그럴까 생각해 보니, 원래 성향이 그랬다.  
-학창 시절에도 이야기 중심 과목(예: 역사)은 힘들었지만, 수학·과학처럼 인풋과 아웃풋이 명확한 과목은 잘했다.  
-마치 순수 함수처럼, 원리를 이해하면 문제를 푸는 건 쉬웠다.  
-   
-다른 항해러들의 글을 보면, 비유나 재치를 곁들여 과정이 생생하게 살아 있었다. 부럽고 멋졌다.  
-그래서 이번에는 **결과보다 과정**에 집중해 쓰기로 했다.  
-과제를 진행하면서 커밋 단위로 AI에게 요약을 요청했고, 그 내용을 docs 폴더에 순차적으로 기록했다.  
-   
-오늘 회고도…과정 중심으로 잘 작성해볼 생각이다!  
- 
+
+항해를 4주 동안 진행하며, 이력서나 블로그 글처럼 '결과 위주'로만 쓰는 내 습관을 깨달았다. 왜 그럴까 생각해 보니, 원래 성향이 그랬다. 학창 시절에도 이야기 중심 과목(예: 역사)은 힘들었지만, 수학·과학처럼 인풋과 아웃풋이 명확한 과목은 잘했다. 마치 순수 함수처럼, 원리를 이해하면 문제를 푸는 건 쉬웠다.
+
+다른 항해러들의 글을 보면, 비유나 재치를 곁들여 과정이 생생하게 살아 있었다. 부럽고 멋졌다. 그래서 이번에는 **결과보다 과정**에 집중해 쓰기로 했다. 과제를 진행하면서 커밋 단위로 AI에게 요약을 요청했고, 그 내용을 docs 폴더에 순차적으로 기록했다.
+
+오늘 회고도 과정 중심으로 잘 작성해볼 생각이다!
+
 ### 3. 다른 항해러 코드 모두 읽기
-항해를 시작한 이유 중 하나는 다른 프론트엔드 개발자들이 어떻게 코드를 짜는지 보고 배우는 것이었다.  
-그런데 지난 4주 동안은 “시간이 없다”는 핑계로 단 한 번도 다른 사람의 코드를 제대로 보지 않았다.  
-   
+
+항해를 시작한 이유 중 하나는 다른 프론트엔드 개발자들이 어떻게 코드를 짜는지 보고 배우는 것이었다. 그런데 지난 4주 동안은 "시간이 없다"는 핑계로 단 한 번도 다른 사람의 코드를 제대로 보지 않았다.
+
 4주차의 현타 이후, 남은 6주는 정말 200% 뽑아먹자는 마음으로 최대한 많은 코드를 읽고 리뷰를 남기기로 했다.
 
-  
 ![](/images/tistory/hanghaePlus-week5-design-patterns/973d73d3c813.png)
 ![](/images/tistory/hanghaePlus-week5-design-patterns/5f6b510beded.png)
 ![](/images/tistory/hanghaePlus-week5-design-patterns/394d7e70b116.png)
 
-   
-이외에도 코드 리뷰 코멘트 남긴 게 많지만 그 중 의미가 있다고 생각하는 코멘트들을 가져와봤다.  
-모든 분들의 코드는 못 읽었지만 코멘트를 남기지 못한 분들을 포함하여 7분 정도의 코드를 읽어봤다.  
-코멘트 남긴 것만 50개는 될 듯!
+이외에도 코드 리뷰 코멘트 남긴 게 많지만 그 중 의미가 있다고 생각하는 코멘트들을 가져와봤다. 모든 분들의 코드는 못 읽었지만 코멘트를 남기지 못한 분들을 포함하여 7분 정도의 코드를 읽어봤다. 코멘트 남긴 것만 50개는 될 듯!
+
 ![](/images/tistory/hanghaePlus-week5-design-patterns/0a76dd8cb4a2.jpg)
 
-   
-PR을 읽으며, 다른 사람들이 어떤 고민을 했는지 엿볼 수 있었다.  
- 
-> “아, 이런 부분도 고민할 수 있구나. 다음 과제 때 나도 해봐야겠다.”  
-“같은 문제를 다르게 해결했네? 그럼 내 방식과의 장단점은 뭐지?”
-  
-   
-코드를 리뷰하는 과정에서, 단순히 문제를 지적하는 것을 넘어  
-**왜 문제가 되는지, 어떻게 개선할 수 있는지**를 글로 풀어낼 수 있었다.  
-또 다른 사람이 내 코드에 남긴 코멘트를 읽으면서, 내 생각과 다른 시각을 분석하는 경험도 쌓였다.  
- 
+PR을 읽으며, 다른 사람들이 어떤 고민을 했는지 엿볼 수 있었다.
+
+> "아, 이런 부분도 고민할 수 있구나. 다음 과제 때 나도 해봐야겠다."
+> "같은 문제를 다르게 해결했네? 그럼 내 방식과의 장단점은 뭐지?"
+
+코드를 리뷰하는 과정에서, 단순히 문제를 지적하는 것을 넘어 **왜 문제가 되는지, 어떻게 개선할 수 있는지**를 글로 풀어낼 수 있었다. 또 다른 사람이 내 코드에 남긴 코멘트를 읽으면서, 내 생각과 다른 시각을 분석하는 경험도 쌓였다.
+
+---
+
 ## 고민하고 시도했던 것들
-이번 과제에서는 기술적으로 공부한 부분보다는 내가 ‘클린 코드’에 대해 생각하고 정의내려보고 실제로 실천해보는 과정이 중요했던 것 같다. 내가 가장 신경 쓴 부분은,  
- 
+
+이번 과제에서는 기술적으로 공부한 부분보다는 내가 '클린 코드'에 대해 생각하고 정의내려보고 실제로 실천해보는 과정이 중요했던 것 같다. 내가 가장 신경 쓴 부분은:
+
 1. 코드 바로 썰고 바로 볶을 수 있는 최적화된 주방 만들기
-1. 어떻게 하면 재사용성과 확장성이 높은 공통 컴포넌트를 만들 수 있을까
-1. util, model, hook에 각각 구분하여 어떤 로직들을 어떻게 구현할까
-1. 모든 도메인을 아우르는 기능을 어떻게 구분하여 구현할것인가
+2. 어떻게 하면 재사용성과 확장성이 높은 공통 컴포넌트를 만들 수 있을까
+3. util, model, hook에 각각 구분하여 어떤 로직들을 어떻게 구현할까
+4. 모든 도메인을 아우르는 기능을 어떻게 구분하여 구현할것인가
+
 ### 1. 코드 바로 썰고 바로 볶을 수 있는 최적화된 주방 만들기
+
 처음에 과제를 시작할 때는 기본적인 역할 기반 폴더 구조로 했다.
- 
-  
-   
-    
-     
-     
+
 ```
-`src/
+src/
 ├── components/   // 재사용 가능한 UI 컴포넌트들을 모아두는 폴더
 ├── constants/    // 상수값이나 설정값을 관리하는 폴더 (예: calculation.ts 등)
 ├── pages/        // 라우팅되는 각 페이지 컴포넌트를 담는 폴더
 ├── hooks/        // 커스텀 React 훅을 정의하는 폴더
 ├── utils/        // 유틸리티 함수들을 모아두는 폴더
 ├── types/        // TypeScript 타입 정의를 위한 폴더
-└── App.tsx       // 애플리케이션의 루트 컴포넌트 파일`
+└── App.tsx       // 애플리케이션의 루트 컴포넌트 파일
 ```
- 
-     
-    
-   
-  
-   
-   
+
 각 도메인 별로 util, constants, type 파일이 네임 스페이스로 딱 구분되는게 보기 좋다고 생각해서 파일명은 이렇게 지었다.
- 
-  
-   
-    
-     
-     
+
 ```
-`utils
+utils
 - cart.util.ts
 - product.util.ts
 
@@ -169,61 +131,46 @@ types
 
 hooks
 - useCart.ts
-- useProduct.ts`
+- useProduct.ts
 ```
- 
-     
-    
-   
-  
-   
-그런데 준일코치님과의 멘토링 중 "동선이 멀다"는 생각하지 못한 피드백을 듣고 폴더구조를 개선해봤다. 현재 이 구조에서는 장바구니 기능을 수정하려면  
- 
+
+그런데 준일코치님과의 멘토링 중 "동선이 멀다"는 생각하지 못한 피드백을 듣고 폴더구조를 개선해봤다. 현재 이 구조에서는 장바구니 기능을 수정하려면
+
 1. components/ 폴더에서 CartItem.tsx 찾기
-1. hooks/ 폴더에서 useCart.ts 찾기
-1. utils/ 폴더에서 cart.util.ts 찾기
-1. constants/ 폴더에서 관련 상수 cart.ts 찾기
-이렇게 여러 폴더를 멀리 돌아다녀야해서 개발 생산성이 떨어졌다. 마치 요리할 때 재료가 냉장고, 창고, 다락방에 흩어져있는 느낌이랄까...?!  
-   
-그래서 '개발 동선 최소화'를 목표로 개선하기 위해 처음엔 FSD 폴더 구조를 고려했지만, 러닝 커브가 있고 과제 제출까지 하루, 이틀 밖에 없었기 때문에 익숙한 Feature-based 구조를 선택했다.  
-   
+2. hooks/ 폴더에서 useCart.ts 찾기
+3. utils/ 폴더에서 cart.util.ts 찾기
+4. constants/ 폴더에서 관련 상수 cart.ts 찾기
+
+이렇게 여러 폴더를 멀리 돌아다녀야해서 개발 생산성이 떨어졌다. 마치 요리할 때 재료가 냉장고, 창고, 다락방에 흩어져있는 느낌이랄까...?!
+
+그래서 '개발 동선 최소화'를 목표로 개선하기 위해 처음엔 FSD 폴더 구조를 고려했지만, 러닝 커브가 있고 과제 제출까지 하루, 이틀 밖에 없었기 때문에 익숙한 Feature-based 구조를 선택했다.
+
 **최상위 구조**
- 
-  
-  
+
 ```
-`src/advanced/
+src/advanced/
 ├── pages/           # 페이지 (HomePage, AdminPage)
 ├── features/        # 도메인별 기능 모듈
-└── shared/          # 공통 자원`
+└── shared/          # 공통 자원
 ```
- 
-  
-   
+
 **주요 기능 도메인**
- 
-  
-  
+
 ```
-`features/
+features/
 ├── admin/          # 관리자 기능
 ├── cart/           # 장바구니
 ├── coupon/         # 쿠폰 시스템
 ├── discount/       # 할인 처리
 ├── notification/   # 알림
 ├── product/        # 상품 관리
-└── search/         # 검색`
+└── search/         # 검색
 ```
- 
-  
-   
-   
+
 **각 기능별 내부 구조**
- 
-  
-  
+
 ```
-`feature/
+feature/
 ├── atoms/          # Jotai 상태 관리
 ├── components/     # UI 컴포넌트
 ├── hooks/          # 커스텀 훅
@@ -231,37 +178,30 @@ hooks
 ├── types/          # 타입 정의
 ├── constants/      # 상수
 ├── data/           # 초기 데이터
-└── utils/          # 유틸리티`
+└── utils/          # 유틸리티
 ```
- 
-  
-   
+
 **공통 자원**
- 
-  
-  
+
 ```
-`shared/
+shared/
 ├── components/     # 공통 UI (icons, layout, ui)
 ├── constants/      # 공통 상수
 ├── hooks/          # 공통 훅
 ├── utils/          # 공통 유틸리티
-└── errors/         # 에러 처리`
+└── errors/         # 에러 처리
 ```
- 
-  
-   
-이렇게 폴더 구조를 변경하고 나니 어떤 기능을 수정할 때 feature 폴더 내부에서 이동하면 되기 때문에 개발 동선이 줄어들었다는 걸 느꼈다. 각 기능 별로 일관된 하위 폴더 구조를 유지하고 있으니 신규 도메인이나 기능이 생길 때 feature 단위로 폴더를 추가하면 돼서 확장성도 훨씬 좋아졌다.  
-   
- 
+
+이렇게 폴더 구조를 변경하고 나니 어떤 기능을 수정할 때 feature 폴더 내부에서 이동하면 되기 때문에 개발 동선이 줄어들었다는 걸 느꼈다. 각 기능 별로 일관된 하위 폴더 구조를 유지하고 있으니 신규 도메인이나 기능이 생길 때 feature 단위로 폴더를 추가하면 돼서 확장성도 훨씬 좋아졌다.
+
 ### 2. 어떻게 하면 재사용성과 확장성이 높은 공통 컴포넌트를 만들 수 있을까
+
 #### Icon 컴포넌트: 일관된 인터페이스로 확장성 확보
+
 Icon과 같은 UI 컴포넌트를 변화에 대응이 가능한 유연한 구조로 구현하고자 했다. Icon 컴포넌트를 만들면서 모든 SVG 아이콘의 구조가 반복적이고 외부 svg 태그 또한 동일한 형태로 반복되고 있는 걸 발견했다. "가장 단순하면서도 효과적인 방법이 뭘까?" 생각해보다가 공통 인터페이스를 가지고 있는 감싸는 메인 Icon 컴포넌트를 만들고, 아이콘 종류마다 각기 다른 path만 가지도록 설계했다.
- 
-  
-  
-```
-`// 개별 아이콘 정의
+
+```typescript
+// 개별 아이콘 정의
 const PlusIcon = (props: IconProps) => <path />
 const MinusIcon = (props: IconProps) => <path />
 const CartIcon = (props: IconProps) => <path />
@@ -303,17 +243,15 @@ const Icon: React.FC<IconProps> = ({
 };
 
 // 사용
-<Icon type="cart" size={5} />`
+<Icon type="cart" size={5} />
 ```
- 
-  
+
 #### Tabs 컴포넌트: 합성 패턴으로 유연성 극대화
+
 Tabs, AdminSection 같은 컴포넌트는 합성 패턴을 기반으로 재사용성이 높은 컴포넌트를 구현했다. Context API를 활용해 상태를 관리하고, 각 하위 컴포넌트가 독립적으로 동작할 수 있도록 설계했다.
- 
-  
-  
-```
-`interface TabsContextType<T> {
+
+```typescript
+interface TabsContextType<T> {
   activeTab: T | null;
   setActiveTab: (tab: T) => void;
 }
@@ -352,17 +290,13 @@ Tabs.List = TabsList;
 Tabs.Trigger = TabsTrigger;
 Tabs.Content = TabsContent;
 
-export default Tabs;`
+export default Tabs;
 ```
- 
-  
-   
+
 사용할 때는 이렇게 직관적이고 선언적으로 사용할 수 있다:
- 
-  
-  
-```
-`<Tabs initialValue="products">
+
+```typescript
+<Tabs initialValue="products">
   <Tabs.List>
     <Tabs.Trigger value="products">상품 관리</Tabs.Trigger>
     <Tabs.Trigger value="coupons">쿠폰 관리</Tabs.Trigger>
@@ -373,29 +307,29 @@ export default Tabs;`
   <Tabs.Content value="coupons">
     <CouponAdmin />
   </Tabs.Content>
-</Tabs>`
+</Tabs>
 ```
- 
-  
- 
+
 ### 3. util, model, hook 구분: 책임에 따른 로직 분리
-테오가 느끼라고 한 것을 충분히 느끼기 위해 과제를 충실히 따라가고자 했고, 힌트로 주신 폴더를 읽어봤는데 hooks, util은 익숙한데 models 폴더가 익숙치 않아 어떤 역할을 하는 모듈의 집합인지 헷갈렸다.  
+
+테오가 느끼라고 한 것을 충분히 느끼기 위해 과제를 충실히 따라가고자 했고, 힌트로 주신 폴더를 읽어봤는데 hooks, util은 익숙한데 models 폴더가 익숙치 않아 어떤 역할을 하는 모듈의 집합인지 헷갈렸다.
+
 GPT를 통해 학습한 결과 세 폴더의 차이점을 이렇게 요약했다:
+
 - **hooks**: React에 의존하는 상태 관리와 변경
 - **utils**: 도메인과 무관한 범용 도구 함수
 - **models**: 순수 비즈니스 로직
+
 이 내용을 기반으로 함수를 분리하고 리팩토링할 때 util로 분리할 부분과 model, hook으로 분리할 부분을 구별하여 리팩토링을 진행했다.
-####  
+
 #### 실제 리팩토링 사례: formatPrice 함수
-   
-예를 들어, 아래와 같은 원래 외부 상태를 주입받는 제품 가격 계산 로직이 있을 때, 각 로직을 순수 유틸 로직과 비즈니스 관련 로직을 구분하여 분리했다.  
-   
+
+예를 들어, 아래와 같은 원래 외부 상태를 주입받는 제품 가격 계산 로직이 있을 때, 각 로직을 순수 유틸 로직과 비즈니스 관련 로직을 구분하여 분리했다.
+
 **AS-IS: 복잡하게 결합된 로직**
- 
-  
-  
-```
-`const formatPrice = (price: number, productId?: string): string => {
+
+```typescript
+const formatPrice = (price: number, productId?: string): string => {
   if (productId) {
     const product = products.find((p) => p.id === productId);
     if (product && getRemainingStock(product) <= 0) {
@@ -408,11 +342,271 @@ GPT를 통해 학습한 결과 세 폴더의 차이점을 이렇게 요약했다
   }
 
   return `₩${price.toLocaleString()}`;
-};`
+};
 ```
- 
-  
-   
-**TO-BE: 책임에 따른 계층 분리**  
-   
+
+**TO-BE: 책임에 따른 계층 분리**
+
 **Utils 계층**: 도메인과 무관한 범용 가격 포맷팅
+
+```typescript
+// src/basic/shared/utils/format.util.ts
+export function formatPrice(
+  price: number,
+  locale: string = "ko-KR",
+  options: Intl.NumberFormatOptions = { style: "currency", currency: "KRW" }
+): string {
+  return new Intl.NumberFormat(locale, options).format(price);
+}
+
+export namespace formatPrice {
+  /**
+   * 예: 5,000원
+   */
+  export function unit(price: number): string {
+    const raw = formatPrice(price, "ko-KR", {
+      style: "currency",
+      currency: "KRW",
+      currencyDisplay: "code",
+      maximumFractionDigits: 0,
+    });
+
+    return raw.replace("KRW", "").trim() + "원";
+  }
+
+  /**
+   * 예: ₩5,000
+   */
+  export function currency(price: number): string {
+    return formatPrice(price, "ko-KR", {
+      style: "currency",
+      currency: "KRW",
+      currencyDisplay: "symbol",
+      maximumFractionDigits: 0,
+    });
+  }
+}
+```
+
+**Models 계층**: 제품 도메인의 비즈니스 로직
+
+```typescript
+const formatProductPrice = ({
+  price,
+  isAdmin = false,
+}: {
+  price: number;
+  isAdmin?: boolean;
+}): string => {
+  return isAdmin ? formatPrice.unit(price) : formatPrice.currency(price);
+};
+
+const getFormattedProductPrice = ({
+  productId,
+  products,
+  cart,
+  isAdmin,
+}: {
+  productId: string;
+  products: ProductWithUI[];
+  cart: CartItem[];
+  isAdmin: boolean;
+}): string => {
+  const product = products.find((p) => p.id === productId);
+  if (!product) {
+    throw new Error("상품을 찾을 수 없습니다.");
+  }
+
+  const isSoldout = isProductSoldout({ productId, products, cart });
+  if (isSoldout) {
+    return "SOLD OUT";
+  }
+
+  const price = formatProductPrice({ price: product.price, isAdmin });
+  return price;
+};
+```
+
+이렇게 분리하니 각 계층의 책임이 명확해지고 테스트하기도 쉬워졌다. utils는 순수 함수로 어떤 환경에서든 동일한 결과를 보장하고, models은 비즈니스 규칙을 캡슐화하여 도메인 지식을 코드로 표현할 수 있게 되었다.
+
+### 4. 전역 알림 시스템: NotificationBoundary 패턴
+
+addNotification이 모든 도메인에 걸쳐 사용되어 거의 대부분의 컴포넌트가 props로 받아야 하는 상황이었다. 알림을 추가하는 것을 각 사용부에서 처리하는 것이 아니라 외부의 한 곳에서 모아 처리할 방법이 없을까 고민했다.
+
+알림을 발생시키는 곳에서는 에러 형태를 던지기만 하고 외부에서 그걸 캐치해서 처리할 수 없을까 고민하게 되었고, 그렇게 떠오른 패턴이 에러 바운더리 구조였다.
+
+#### 시스템 설계
+
+**1. NotificationError 클래스**
+
+우선 기존 Error 클래스를 상속하여 NotificationError라는 커스텀 에러 클래스를 만들었다. 에러를 표현할 수 있도록 알림 타입을 속성으로 가지도록 했고, 기존 에러와 구분할 수 있게 name 속성을 NotificationError로 지정했다.
+
+```typescript
+export class NotificationError extends Error {
+  constructor(
+    public message: string,
+    public type: NotificationType
+  ) {
+    super(message);
+    this.name = "NotificationError";
+    this.type = type;
+  }
+}
+```
+
+**2. throwNotificationError 유틸리티**
+
+커스텀 NotificationError를 발생시키는 로직을 유틸화하여 반복적인 코드를 재사용할 수 있는 구조로 만들었다.
+
+```typescript
+export const throwNotificationError: Record<
+  NotificationType,
+  (message: string) => never
+> = {
+  [NOTIFICATION.TYPES.ERROR]: (message: string): never => {
+    throw new NotificationError(message, NOTIFICATION.TYPES.ERROR);
+  },
+  [NOTIFICATION.TYPES.SUCCESS]: (message: string): never => {
+    throw new NotificationError(message, NOTIFICATION.TYPES.SUCCESS);
+  },
+  [NOTIFICATION.TYPES.WARNING]: (message: string): never => {
+    throw new NotificationError(message, NOTIFICATION.TYPES.WARNING);
+  },
+} as const;
+```
+
+**3. NotificationBoundary 컴포넌트**
+
+이 알림 에러를 캐치하는 영역인 NotificationBoundary에서 에러 이벤트를 감지하여 이벤트 리스너에서 알림 에러를 처리할 수 있도록 했다. 알림 컴포넌트도 이 바운더리 내부에서 렌더링하여 알림 관련 처리 로직이 모두 NotificationBoundary에 모여있을 수 있게 했다.
+
+```typescript
+export function NotificationBoundary({ children }: PropsWithChildren) {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      if (event.reason instanceof NotificationError) {
+        event.preventDefault();
+        // ...알림 추가 로직
+        return;
+      }
+      throw event;
+    };
+
+    const handleGlobalError = (event: ErrorEvent) => {
+      if (event.error instanceof NotificationError) {
+        event.preventDefault();
+        // ...알림 추가 로직
+        return;
+      }
+      throw event;
+    };
+
+    window.addEventListener("error", handleGlobalError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener("error", handleGlobalError);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+    };
+  }, []);
+
+  return (
+    <div>
+      <div className="fixed top-20 right-4 z-50 space-y-2 max-w-sm">
+        {notifications.map((notification) => (
+          <NotificationItem
+            key={notification.id}
+            notification={notification}
+            removeNotification={removeNotification}
+          />
+        ))}
+      </div>
+      {children}
+    </div>
+  );
+}
+```
+
+#### 패턴의 장단점
+
+**장점:**
+
+- 일반 에러와 알림 에러를 구분하여 모두 캐치하여 핸들링 가능
+- 알림 관련 로직을 모두 NotificationBoundary에서 처리하여 관심사 분리
+- 알림을 발생시키는 구조가 간편하고 새로운 알림 타입 추가 용이
+
+**단점:** 어쨌든 알림을 발생시키지만 에러 타입이기 때문에 알림 에러가 발생한 시점에 로직의 흐름이 중단된다는 것이었다. 이 문제 때문에 아무데서나 알림을 발생시켜선 안되고 알림을 발생시키기 전 필요한 로직은 모두 선행시킨 후 마지막에 알림을 발생시켜야 했다.
+
+#### 개선 방향: 비동기 알림 시스템
+
+이 알림 에러 방식을 개선한다면 Promise로 에러를 발생시켜 동기적 에러가 아닌 비동기 에러로 개선하여 로직을 중단시키지 않게 할 수 있을 것 같다.
+
+```typescript
+// Promise.reject 방식으로 개선
+export const notifyAsync = {
+  success: (message: string) => {
+    Promise.reject(new NotificationError(message, "SUCCESS"));
+    // 함수는 여기서 정상 종료됨 (에러를 던지지 않음)
+  },
+};
+
+// 사용 시
+const handleSubmit = () => {
+  updateData(); // 실행됨
+  notifyAsync.success("완료!"); // Promise.reject만 호출하고 계속 진행
+  saveToStorage(); // 실행됨!
+};
+```
+
+Promise.reject()를 호출하면 이 Promise가 catch되지 않으면 브라우저에서 'unhandledrejection' 이벤트를 발생시키므로, NotificationBoundary에서 이를 감지할 수 있다.
+
+이렇게 내가 생각한 것을 실제 설계하고 구현해보니 너무 재밌었다!
+
+---
+
+## 마치며: KPT 회고
+
+이번 과제를 통해 많은 것을 배우고 느꼈다. 간단하게 KPT 회고로 이번 경험을 정리해보자.
+
+### Keep (잘했던 것들)
+
+**과제 목표 설정과 문서화** 과제 시작 전 명확한 목표를 설정하고 docs 폴더에 기록한 것이 큰 도움이 되었다. 이는 과제 진행 중 방향성을 잃지 않게 해주었고, 지금 이렇게 회고를 작성할 때도 좋은 참고 자료가 되었다.
+
+**AI 의존도 조절** AI의 개입을 최소화하여 직접 코드를 작성하고 통제한 것. 이를 통해 코드에 대한 주도권을 되찾을 수 있었고, 각 구현의 의도와 맥락을 명확히 이해할 수 있었다.
+
+**다른 항해러들과의 적극적인 교류** 과제 완료 후 다른 항해러들의 코드를 읽고 리뷰를 남긴 것. 이를 통해 다양한 접근법을 학습할 수 있었고, 내 코드를 객관적으로 바라보는 시각을 기를 수 있었다.
+
+**과정 중심의 사고** 결과보다는 과정에 집중하려고 노력한 것. 이를 통해 각 단계에서 무엇을 배웠는지, 어떤 고민을 했는지를 명확히 기록할 수 있었다.
+
+### Problem (문제였던 것들)
+
+**늦은 과제 시작** 과제 시작이 늦어져 충분한 시간을 확보하지 못한 것. 이로 인해 깊이 있는 탐구나 다양한 실험을 해볼 기회를 놓쳤다.
+
+**계획 대비 실행력 부족** 좋은 계획을 세웠지만, 실제 실행에서는 시간 관리가 아쉬웠다. 특히 문서화나 테스트 작성 같은 부분에서 계획한 만큼 시간을 투자하지 못했다.
+
+### Try (다음에 시도할 것들)
+
+**주간 계획 수립 개선** 과제 완료한 금요일에는 쉬지만 말고 다음 과제 시작 전 해야할 일들을 미리 정리하자. 다른 사람 코드 구경, WIL 작성, 다음 주 계획 수립 등을 미리 끝내두면 과제에 더 집중할 수 있을 것이다.
+
+**점진적 개선 방식 도입** 한 번에 완벽한 구조를 만들려고 하지 말고, 작은 단위로 개선해나가는 방식을 시도해보자. 이를 통해 시간 압박 상황에서도 꾸준히 코드 품질을 개선할 수 있을 것이다.
+
+**학습 내용 즉시 적용** 새로 배운 패턴이나 개념을 다음 과제에서 즉시 적용해보자. 이론으로만 알고 있던 것을 실제로 구현해보면서 체화시키는 것이 중요하다.
+
+**코드 리뷰 문화 활성화** 다른 항해러들과 더 적극적으로 코드 리뷰를 주고받자. 이는 서로의 성장에 도움이 될 뿐만 아니라, 다양한 관점을 배울 수 있는 좋은 기회이기도 하다.
+
+---
+
+![](/images/tistory/hanghaePlus-week5-design-patterns/3ca3474626a1.jpg)
+
+WIL을 일요일 저녁에 마무리하고 있는 지금…과제할 일요일을 또 WIL에 뺏겨버렸다. 흑…이제 6주차 과제를 시작해봐야겠다.
+
+하지만 이번 과제를 통해 많은 것을 배웠다. 특히 '좋은 코드'가 무엇인지에 대한 나만의 기준을 세울 수 있었고, AI와 협업하는 방법, 그리고 동료들과 함께 성장하는 방법을 체득할 수 있었다.
+
+6주차 과제는 더 자기주도적으로, 더 적극적으로 임해보자. 그리고 이번에 세운 좋은 습관들을 계속 이어나가자. 항해 99의 진짜 가치는 과제를 완료하는 것이 아니라, 과정에서 얻는 성장과 인사이트에 있다는 걸 이번 주를 통해 확실히 깨달았다.
+
+다음 주도 화이팅! 🚀
+
+**+ BP 받았습니다!**
+
+![](/images/tistory/hanghaePlus-week5-design-patterns/04375cf384e8.png)
