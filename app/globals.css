@@ -1,10 +1,18 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Pretendard';
+  src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.woff2') format('woff2');
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--fg);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'Pretendard', system-ui, sans-serif;
+  --font-mono: var(--font-fira-code);
 
   /* 브랜드 컬러 Tailwind 유틸리티 */
   --color-brand-50:  var(--brand-50);
@@ -18,62 +26,81 @@
   --color-link:      var(--link);
   --color-muted:     var(--muted);
   --color-border:    var(--border);
+
+  /* 파스텔 팔레트 Tailwind 유틸리티 */
+  --color-pastel-pink:     var(--pastel-pink);
+  --color-pastel-lavender: var(--pastel-lavender);
+  --color-pastel-blue:     var(--pastel-blue);
+  --color-pastel-yellow:   var(--pastel-yellow);
+  --color-pastel-mint:     var(--pastel-mint);
 }
 
 /* ── 라이트 모드 ─────────────────────────────────── */
 :root {
-  --bg: #ffffff;
-  --fg: #111111;
-  --muted: #6b7280;
-  --border: #e5e7eb;
-  --code-bg: #f3f4f6;
-  --pre-bg: #1a1a1a;
-  --pre-fg: #e5e7eb;
-  --prose-body: #374151;
+  --bg: #f8f9fa;
+  --fg: #1a1a2e;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --code-bg: #f1f5f9;
+  --pre-bg: #1e2433;
+  --pre-fg: #e2e8f0;
+  --prose-body: #334155;
 
-  /* 브랜드 컬러 */
+  /* 파스텔 팔레트 (히어로 그라디언트용) */
+  --pastel-pink:     #d1fae5;
+  --pastel-lavender: #a7f3d0;
+  --pastel-blue:     #bbf7d0;
+  --pastel-yellow:   #ecfdf5;
+  --pastel-mint:     #6ee7b7;
+
+  /* 브랜드 컬러 (GitHub green 계열) */
   --brand-50:  #f0fdf4;
   --brand-100: #dcfce7;
   --brand-200: #bbf7d0;
-  --brand-500: #16a34a;
-  --brand-600: #15803d;
-  --brand-700: #166534;
+  --brand-500: #22c55e;
+  --brand-600: #16a34a;
+  --brand-700: #15803d;
   --brand-900: #14532d;
 
   /* 시맨틱 별칭 */
   --accent:   var(--brand-500);
   --link:     var(--brand-600);
-  --tag-bg:   var(--brand-100);
-  --tag-text: var(--brand-700);
+  --tag-bg:   #dcfce7;
+  --tag-text: #166534;
 }
 
 /* ── 다크 모드 ─────────────────────────────────── */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f0f0f;
-    --fg: #f0f0f0;
-    --muted: #9ca3af;
-    --border: #2a2a2a;
-    --code-bg: #1e1e1e;
-    --pre-bg: #161616;
-    --pre-fg: #d1d5db;
-    --prose-body: #d1d5db;
+:root.dark {
+  --bg: #0d1117;
+  --fg: #e6edf3;
+  --muted: #7d8590;
+  --border: #21262d;
+  --code-bg: #161b22;
+  --pre-bg: #010409;
+  --pre-fg: #e6edf3;
+  --prose-body: #adbac7;
 
-    /* 다크 브랜드 컬러 */
-    --brand-50:  #052e16;
-    --brand-100: #052e16;
-    --brand-200: #14532d;
-    --brand-500: #4ade80;
-    --brand-600: #4ade80;
-    --brand-700: #86efac;
-    --brand-900: #bbf7d0;
+  /* 다크 파스텔 팔레트 */
+  --pastel-pink:     #1a3325;
+  --pastel-lavender: #152b1e;
+  --pastel-blue:     #1a3328;
+  --pastel-yellow:   #1e3a28;
+  --pastel-mint:     #122a1c;
 
-    /* 다크 시맨틱 별칭 */
-    --accent:   #4ade80;
-    --link:     #4ade80;
-    --tag-bg:   #052e16;
-    --tag-text: #86efac;
-  }
+  /* 다크 브랜드 컬러 (GitHub Actions green) */
+  --brand-50:  #0a1f0f;
+  --brand-100: #0d2818;
+  --brand-200: #1a4a2e;
+  --brand-500: #3fb950;
+  --brand-600: #56d364;
+  --brand-700: #7ee787;
+  --brand-900: #aff5b4;
+
+  /* 다크 시맨틱 별칭 */
+  --accent:   var(--brand-500);
+  --link:     var(--brand-600);
+  --tag-bg:   #0d2818;
+  --tag-text: #3fb950;
 }
 
 /* prefers-reduced-motion */
@@ -98,7 +125,7 @@ html {
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: 'Pretendard', system-ui, sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
@@ -145,7 +172,7 @@ body {
 }
 
 .prose code {
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-fira-code), monospace;
   font-size: 0.875em;
   background: var(--code-bg);
   padding: 0.15em 0.4em;
@@ -205,4 +232,20 @@ body {
   border-radius: 8px;
   max-width: 100%;
   height: auto;
+}
+
+/* ── 로고 shimmer 애니메이션 ──────────────────────── */
+
+@keyframes gradient-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.logo-shimmer:hover {
+  background: linear-gradient(90deg, #bbf7d0, #6ee7b7, #a7f3d0, #dcfce7, #bbf7d0);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shimmer 2s linear infinite;
 }

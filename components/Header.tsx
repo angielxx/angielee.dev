@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CATEGORY_GROUPS } from "@/lib/categories";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const NAV_LINKS = [
   { href: "/about", label: "About" },
@@ -46,9 +47,8 @@ export default function Header() {
     >
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* 워드마크 */}
-        <Link href="/" className="text-base font-medium tracking-tight shrink-0">
-          More than{" "}
-          <span className="text-brand-600 font-bold">Better</span>
+        <Link href="/" className="text-base font-bold tracking-tight shrink-0 logo-shimmer transition-all duration-300">
+          Angie<span className="text-brand-600">.Lee</span>
         </Link>
 
         {/* 데스크탑 네비게이션 */}
@@ -87,14 +87,14 @@ export default function Header() {
                 <div className="my-1 border-t border-[var(--border)]" />
                 {Object.entries(CATEGORY_GROUPS).map(([group, categories]) => (
                   <div key={group}>
-                    <p className="px-3 py-1 text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
+                    <p className="px-3 pt-2 pb-1 text-[11px] font-bold text-[var(--fg)] opacity-50 uppercase tracking-widest">
                       {group}
                     </p>
                     {categories.map((cat) => (
                       <Link
                         key={cat}
                         href={`/blog?category=${encodeURIComponent(cat)}`}
-                        className="block px-3 py-1.5 rounded-lg text-sm text-[var(--muted)] hover:bg-brand-50 hover:text-[var(--fg)] transition-colors"
+                        className="block px-3 py-1.5 rounded-lg text-sm text-[var(--fg)] opacity-80 hover:bg-brand-50 hover:opacity-100 transition-colors"
                       >
                         {cat}
                       </Link>
@@ -125,36 +125,41 @@ export default function Header() {
               />
             </Link>
           ))}
+          <ThemeToggle />
         </nav>
 
-        {/* 모바일 햄버거 버튼 */}
-        <button
-          onClick={() => setMenuOpen((v) => !v)}
-          aria-label={menuOpen ? "메뉴 닫기" : "메뉴 열기"}
-          className="lg:hidden p-2 -mr-2 text-[var(--muted)] hover:text-[var(--fg)] transition-colors"
-        >
-          <span className="sr-only">{menuOpen ? "닫기" : "메뉴"}</span>
-          <div className="w-5 h-4 flex flex-col justify-between">
-            <span
-              className={[
-                "block h-px bg-current transition-all duration-200 origin-center",
-                menuOpen ? "rotate-45 translate-y-[7px]" : "",
-              ].join(" ")}
-            />
-            <span
-              className={[
-                "block h-px bg-current transition-all duration-200",
-                menuOpen ? "opacity-0" : "",
-              ].join(" ")}
-            />
-            <span
-              className={[
-                "block h-px bg-current transition-all duration-200 origin-center",
-                menuOpen ? "-rotate-45 -translate-y-[9px]" : "",
-              ].join(" ")}
-            />
-          </div>
-        </button>
+        {/* 모바일: 테마 토글 + 햄버거 버튼 */}
+        <div className="lg:hidden flex items-center gap-1">
+          <ThemeToggle />
+          {/* 모바일 햄버거 버튼 */}
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label={menuOpen ? "메뉴 닫기" : "메뉴 열기"}
+            className="p-2 -mr-2 text-[var(--muted)] hover:text-[var(--fg)] transition-colors"
+          >
+            <span className="sr-only">{menuOpen ? "닫기" : "메뉴"}</span>
+            <div className="w-5 h-4 flex flex-col justify-between">
+              <span
+                className={[
+                  "block h-px bg-current transition-all duration-200 origin-center",
+                  menuOpen ? "rotate-45 translate-y-[7px]" : "",
+                ].join(" ")}
+              />
+              <span
+                className={[
+                  "block h-px bg-current transition-all duration-200",
+                  menuOpen ? "opacity-0" : "",
+                ].join(" ")}
+              />
+              <span
+                className={[
+                  "block h-px bg-current transition-all duration-200 origin-center",
+                  menuOpen ? "-rotate-45 -translate-y-[9px]" : "",
+                ].join(" ")}
+              />
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* 모바일 메뉴 */}
@@ -178,14 +183,14 @@ export default function Header() {
 
               {Object.entries(CATEGORY_GROUPS).map(([group, categories]) => (
                 <div key={group}>
-                  <p className="px-3 py-1 text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mt-2">
+                  <p className="px-3 pt-3 pb-1 text-[11px] font-bold text-[var(--fg)] opacity-50 uppercase tracking-widest mt-1">
                     {group}
                   </p>
                   {categories.map((cat) => (
                     <Link
                       key={cat}
                       href={`/blog?category=${encodeURIComponent(cat)}`}
-                      className="block px-3 py-2.5 rounded-lg text-[var(--muted)] hover:bg-brand-50 hover:text-[var(--fg)] transition-colors"
+                      className="block px-3 py-2.5 rounded-lg text-[var(--fg)] opacity-80 hover:bg-brand-50 hover:opacity-100 transition-colors"
                     >
                       {cat}
                     </Link>

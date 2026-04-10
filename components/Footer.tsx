@@ -8,8 +8,8 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="flex flex-col items-center gap-4 text-center">
           {/* 워드마크 */}
-          <Link href="/" className="text-sm font-medium">
-            More than <span className="text-brand-600 font-bold">Better</span>
+          <Link href="/" className="text-sm font-bold tracking-tight logo-shimmer transition-all duration-300">
+            Angie<span className="text-brand-600">.Lee</span>
           </Link>
 
           <p className="text-xs text-[var(--muted)]">
@@ -41,7 +41,7 @@ export default function Footer() {
           </div>
 
           <p className="text-xs text-[var(--muted)]">
-            © {year} More than Better
+            © {year} Angie Lee
           </p>
         </div>
       </div>
