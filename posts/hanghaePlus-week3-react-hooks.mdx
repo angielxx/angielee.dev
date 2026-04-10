@@ -1,0 +1,630 @@
+---
+title: "항해플러스 프론트엔드 6기 3주차 : React 내장 Hook 직접 구현해보기 (feat. BP 받음)"
+description: "3주차 과제는 꽤 할 만했다. 그래서 과제를 진행하면서 그 진행 과정을 꼼꼼히 기록했고, 모르는 개념이 등장하면 깊이 있게 디깅해보기도 했다. 이번 주차에서 새롭게 배운 내용과 치열했던 트러블슈팅 과정을 함께 기록해본다. 주제와 목표 3주차 과제의 주제는 “Rea..."
+date: "2025-07-28"
+category: "회고"
+tags: ["항해플러스"]
+---
+
+![](/images/tistory/hanghaePlus-week3-react-hooks/ed55da88ff68.jpg)
+
+ 
+
+![](/images/tistory/hanghaePlus-week3-react-hooks/3e38616eb0c5.png)
+
+ 
+
+ 
+
+ 
+
+ 
+
+3주차 과제는 꽤 할 만했다. 그래서 과제를 진행하면서 그 진행 과정을 꼼꼼히 기록했고, 모르는 개념이 등장하면 깊이 있게 디깅해보기도 했다. 이번 주차에서 새롭게 배운 내용과 치열했던 트러블슈팅 과정을 함께 기록해본다.
+
+##  
+
+## 주제와 목표
+
+ 
+
+3주차 과제의 주제는 “React, Beyond the Basics”였다. 이름 그대로 리액트의 기본 동작 원리를 넘어, 비교 함수와 useRef, useMemo 등 React 내장 훅과 memo 같은 HOC를 직접 구현해보는 것이 과제의 목표였다.
+
+주요 구현 항목:
+
+- **비교 함수:** shallowEquals, deepEquals
+
+- **React 내장 훅:** useRef, useMemo, useCallback, useDeepMemo, useShallowState, useAutoCallback
+
+- **HOC:** memo, deepMemo
+
+- **심화 훅:** useStore, useShallowSelector, useSyncExternalStore 기반 옵저버, useRouter, useStorage
+
+- **Context API 개선:** ToastContext, ModalContext
+
+양이 많았던 1주차 과제, 완벽히 이해가 안 됐던 2주차 과제보다는 해야 할 일이 명확했고, 미션 하나하나를 깨나가는 재미가 있던 과제였다.
+
+##  
+
+## 기술적으로 배운 것들
+
+###  
+
+### 1. **실제 React가 hook을 관리하는 방식**
+
+ 
+
+React는 훅을 상태 배열(Linked List)과 인덱스를 기반으로 동작한다. 이 내용을 통해 왜 hook을 조건문이나 반복문 안에서 쓰면 안되는지 이해하게 됐다.
+
+####  
+
+#### 1) Hook 상태 저장 구조
+
+```
+`let hooks = [];
+let currentHookIndex = 0;
+`
+```
+
+hooks는 재 렌더링 중인 컴포넌트 인스턴스에 대한 모든 훅의 상태를 저장하는 배열이다. 훅 호출 순서(index)에 따라 저장되며, 리렌더링 시에도 그 순서를 유지한다. 새로운 렌더링이 발생해도 기존 상태를 재사용하며, currentHookIndex = 0부터 훅을 순차적으로 접근한다.
+
+currentHookIndex는 렌더링 도중에 현재 어떤 훅을 실행하고 있는지 나타내는 인덱스로, 각 훅 호출 시 hooks[currentHookIndex]를 사용하며, 훅 호출이 끝나면 currentHookIndex++를 해서 다음 훅으로 넘어간다.
+
+####  
+
+#### 2) Hook 상태 저장 예시
+
+ 
+
+만약 컴포넌트가 이렇게 생겼다면
+
+```
+`function MyComponent() {
+  const [count, setCount] = useState(0); // 첫 번째 훅
+  const [text, setText] = useState("Hi"); // 두 번째 훅
+  const ref = useRef(null); // 세 번째 훅
+}
+`
+```
+
+ 
+
+React는 이 컴포넌트를 렌더링할 때, hooks[] 배열을 다음처럼 구성한다:
+
+```
+`hooks = [
+  0, // hooks[0] = count의 상태
+  "Hi", // hooks[1] = text의 상태
+  { current: null }, // hooks[2] = ref의 상태
+];
+`
+```
+
+###  
+
+### 2. **hook의 호출 순서가 중요한 이유**
+
+ 
+
+React는 각 컴포넌트의 상태를 렌더링 “순서(index)”로 저장하고 꺼내오기 때문에, Hook의 호출 순서가 바뀌면 완전히 잘못된 상태를 꺼내오게 된다.
+
+####  
+
+#### **Hook 순서가 꼬이는 예**
+
+만약 이런 식으로 hook을 조건문에서 호출하게되면
+
+```
+`// hook의 호출 순서 규칙을 위반하는 경우 - 조건문, 반복문
+if (condition) {
+  const [a, setA] = useState(0); // ❌ Hook이 조건문 안에 있음
+}
+const [b, setB] = useState(0);
+`
+```
+
+ 
+
+1차 렌더링 시 condition === true라면
+
+```
+`hooks[0] = 0; // a
+hooks[1] = 1; // b
+`
+```
+
+ 
+
+2차 렌더링 시 condition === false라면
+
+```
+`// 첫 번째 useState 호출이 생략됨!
+hooks[0] = 1; // b라고 생각했지만, a의 자리 덮어씀 → 꼬임 발생
+`
+```
+
+ 
+
+condition이 true였다가 false로 바뀌면 b는 a의 자리를 덮어쓴다. React는 순서 기반으로 상태를 꺼내기 때문에 훅 순서가 달라지면 내부 상태가 망가진다.
+
+##  
+
+### 3. **얕은 비교와 깊은 비교의 차이**
+
+####  
+
+#### 1) 얕은 비교 (shallow comparison)
+
+객체의 1단계 속성까지만 비교한다. 참조형은 참조값만 비교하고, 원시형은 값을 비교한다.
+
+####  
+
+#### 2) 깊은 비교(deep comparison)
+
+객체의 모든 하위 속성을 재귀적으로 비교한다.
+
+####  
+
+#### 3) **React는 왜 얕은 비교를 쓰는가?**
+
+ 
+
+React에서는 **성능 최적화**를 위해 대부분 얕은 비교만 사용한다. 예를 들어 React.memo, useMemo, useCallback, useEffect 모두 의존성 배열이나 props를 얕게 비교하여 렌더링 여부를 결정한다.
+
+- 빠르기 때문
+
+- 대부분 불변성을 유지하므로 얕은 비교로도 충분히 변화 감지가 가능함
+
+##  
+
+### 4. **Object.is의 역할**
+
+####  
+
+#### 1) Object.is란
+
+```
+`Object.is(value1, value2);
+`
+```
+
+ 
+
+두 값이 **정확히** 같은지 여부를 판단하며, +0 vs -0, NaN vs NaN의 경우 ===과 다르게 동작한다.
+
+```
+`+0 === -0 // true
+Object.is(+0, -0) // false ✅
+
+NaN === NaN // false
+Object.is(NaN, NaN) // true ✅
+`
+```
+
+ 
+
+####  
+
+#### 2) React에서 사용되는 이유
+
+렌더링 여부를 결정할 때 props나 의존성 배열을 비교하여 결정하는데, 이때 ===를 사용하게 되면 NaN이나 +0, -0처럼 실제로는 값이 바뀌지 않았음에도 변경됐다고 판단할 수 있다.
+
+Object.is는 이러한 엣지 케이스를 정확히 처리하기 때문에 **불필요한 리렌더링을 방지하고**, **예측 가능한 렌더링**을 가능하게 해준다.
+
+####  
+
+#### 3) Object.is 브라우저 호환성
+
+Object.is()는 ES6(ECMAScript 2015)에서 도입된 함수이기 때문에, **구형 브라우저**에서는 지원하지 않을 수 있다. 그래서 구형 브라우저에서도 같은 동작을 하도록 polyfill을 만들어 사용할 수 있다.
+
+```
+`// Object.is가 없는 경우를 위한 대체 함수 (폴리필)
+function is(x, y) {
+  if (x === y) {
+    // +0과 -0 구분
+    return x !== 0 || 1 / x === 1 / y;
+  }
+  // NaN과 NaN 비교
+  return x !== x && y !== y;
+}
+
+// 폴리필 적용 방식 예시
+if (!Object.is) {
+  Object.is = function (x, y) {
+    if (x === y) {
+      return x !== 0 || 1 / x === 1 / y;
+    }
+    return x !== x && y !== y;
+  };
+}
+`
+```
+
+##  
+
+### 5. **useSyncExternalStore**
+
+처음에는 낯선 훅이었지만, 내부적으로 subscribe, getSnapshot, getServerSnapshot을 조합하여 **렌더링 이전 시점에 외부 상태를 가져오고**, **서버/클라이언트 상태 불일치를 방지**해주는 역할을 한다는 걸 알게 됐다.
+
+특히 Concurrent Mode와 SSR을 고려했을 때 왜 필요한 훅인지 깊이 이해할 수 있었다.
+
+####  
+
+#### 1) 기존 방식
+
+React 외부의 상태를 구독할 때 가장 흔히 사용하는 방식은 다음과 같다.
+
+```
+`const [state, setState] = useState(store.getState());
+
+useEffect(() => {
+  const unsubscribe = store.subscribe(() => {
+    setState(store.getState());
+  });
+  return unsubscribe;
+}, []);
+`
+```
+
+이 방식엔 근본적인 문제가 있다.
+
+- useEffect는 렌더링 이후에 실행되기 때문에, 렌더링 타이밍과 외부 상태의 변화가 어긋날 수 있다.
+
+- 즉, 이미 외부 상태가 바뀌었는데도 이전 값을 기준으로 렌더링되며 → 깜빡임이나 불일치가 발생한다.
+
+- 특히 **React 18의 Concurrent Mode(렌더 일시 중단 & 재시작 가능)** 환경에선 이 문제로 인한 버그가 더 자주 발생할 수 있다.
+
+- SSR 환경에선 useEffect 자체가 실행되지 않기 때문에 hydration mismatch 문제가 생긴다.
+
+###  
+
+#### 2) **Concurrent Mode에서 useSyncExternalStore가 해결하는 문제**
+
+React 18부터는 렌더링을 **동기적으로 처리하지 않아도 되는 상황**이 생겼다. 즉, 화면 전체를 한 번에 그리는 게 아니라 **조금 그렸다가 중단하고, 나중에 다시 그리거나**, **더 중요한 UI를 먼저 그리고 나중에 느린 걸 채워넣는 것**이 가능해졌다.
+
+예를 들어, 렌더링이 느린 컴포넌트가 있으면 일단 대기한다.
+
+```
+`<Suspense fallback={<Loading />}>
+  <SlowComponent />
+</Suspense>
+`
+```
+
+React는 &lt;SlowComponent />를 렌더링하려다가 Promise(suspense)를 만나면, 렌더링을 중단하거나 미룬다. (suspending) 이를 통해 React는 중요한 버튼은 먼저 보여주고 렌더링이 느린 컴포넌트는 로딩 중 상태로 대체한다.
+
+이 때, React가 느린 컴포넌트의 렌더링을 중단하고 있는 사이에, 사용자 액션이나 WebSocket 수신, 서버 폴링 등으로 store 상태가 변경될 수 있다. React는 아직 화면을 그리지 않았는데 외부 상태가 바뀌어 버린 것!
+
+> 
+그렇다면 여기서 문제는?
+
+ 
+
+나중에 재개된 렌더링은 “시작할 당시의 낡은 상태”를 기준으로 계속 이어진다. 즉, React의 **렌더링 결과와 실제 상태가 불일치**하게 되는 것!!!
+
+ 
+
+이 과정을 정리하자면
+
+1. 컴포넌트가 렌더링을 시작한다.
+
+1. React가 이 렌더링을 중단(suspend)하거나 지연시킨다.
+
+1. 그 사이 외부 상태(store)가 바뀐다.
+
+1. 렌더링이 재개되지만… 이 렌더링은 이전 상태를 기반으로 시작된 것이다!
+
+→ 이미 낡은 상태를 기반으로 DOM을 그려버리는 렌더링 불일치 문제가 발생!
+
+> 
+여기서 **useSyncExternalStore는 이 문제를 어떻게 해결하나?**
+
+1. **렌더링을 시작할 때** → getSnapshot()을 즉시 호출해서 최신 상태 확보하고
+
+1. **렌더링 도중 외부 상태가 바뀌면** → 해당 렌더링은 무효화됨(invalidated) → 다시 렌더링을 시작한다.
+
+즉, 낡은 상태로 렌더링되는 걸 사전에 막는 안전장치 역할을 하는 것이다.
+
+##  
+
+## 어려웠던 것과 고민들
+
+###  
+
+### 1. **useMemo - 전역 변수 함정과 메모이제이션 실패**
+
+####  
+
+#### ❌ useMemo 함수 변수 사용
+
+ 
+
+처음 useMemo를 구현했을 때, 값이 매번 다시 계산되는 문제가 있었다. hasMemoMounted 변수를 만들어 첫 렌더링인지 체크하려고 했지만, 이 변수는 함수 안에 있어서 렌더링마다 항상 false가 되어 결국 매번 factory()가 실행되었다.
+
+```
+`export function useMemo<T>(factory: () => T, _deps: DependencyList, _equals = shallowEquals): T {
+  let hasMemoMounted = false;
+
+  const memoizedState = useRef<{ value: T; deps: DependencyList } | null>(null);
+
+  if (!hasMemoMounted) {
+    hasMemoMounted = true;
+    memoizedState.current = {
+      value: factory(),
+      deps: _deps,
+    };
+
+    return memoizedState.current.value as T;
+  }
+
+  const compareFunc = _equals || shallowEquals;
+
+  if (!memoizedState.current || !compareFunc(memoizedState.current.deps, _deps)) {
+    memoizedState.current = {
+      value: factory(),
+      deps: _deps,
+    };
+  }
+
+  return memoizedState.current.value as T;
+}
+`
+```
+
+####  
+
+#### ❌ useMemo 외부 전역 변수 사용
+
+ 
+
+그렇다고 전역에 두면? 또 문제가 생긴다. 모든 컴포넌트가 같은 hasMemoMounted 값을 공유해서 **한 컴포넌트의 렌더링 상태가 다른 컴포넌트에 영향을 주는 버그**가 발생했다.
+
+```
+`let hasMemoMounted = false;
+
+export function useMemo<T>(factory: () => T, _deps: DependencyList, _equals = shallowEquals): T {
+  const memoizedState = useRef<{ value: T; deps: DependencyList } | null>(null);
+
+  if (!hasMemoMounted) {
+    hasMemoMounted = true;
+    memoizedState.current = {
+      value: factory(),
+      deps: _deps,
+    };
+
+    return memoizedState.current.value as T;
+  }
+
+  const compareFunc = _equals || shallowEquals;
+
+  if (!memoizedState.current || !compareFunc(memoizedState.current.deps, _deps)) {
+    memoizedState.current = {
+      value: factory(),
+      deps: _deps,
+    };
+  }
+
+  return memoizedState.current.value as T;
+}
+`
+```
+
+####  
+
+#### ✅ 렌더링 컨텍스트별 상태 저장
+
+ 
+
+결국 React가 각 컴포넌트 인스턴스마다 별도의 상태 저장소를 가지고 있는 것처럼, 나도 **useRef를 사용해서 렌더링 컨텍스트별 상태를 저장하는 방식**으로 전환했다.
+
+```
+`export function useMemo<T>(factory: () => T, _deps: DependencyList, _equals = shallowEquals): T {
+  // deps와 value는 1:1 대응
+  const memoizedState = useRef<{ value: T; deps: DependencyList } | null>(null);
+
+  const compareFunc = _equals || shallowEquals;
+
+  // 초기 렌더링 시 초기값 설정 or 의존성 배열이 변경되었을 때 새로운 값 계산
+  if (!memoizedState.current || !compareFunc(memoizedState.current.deps, _deps)) {
+    memoizedState.current = {
+      value: factory(),
+      deps: _deps,
+    };
+  }
+
+  // 의존성 배열이 변경되지 않았을 때 이전 값 반환
+  return memoizedState.current.value;
+}
+`
+```
+
+##  
+
+### 2. **useAutoCallback - 참조는 유지하면서 값은 최신으로?**
+
+이번 과제에서 가장 헷갈렸던 구현 중 하나였다. 요구사항은 다음과 같았다:
+
+> 
+“참조는 변경되지 않으면서도, 최신 상태나 props를 참조해야 한다.”
+
+####  
+
+#### 1) 왜 이런 패턴이 필요할까?
+
+일반적으로 useCallback은 의존성 배열이 비어 있으면 함수 참조는 변하지 않지만, 내부에서 사용하는 값은 "생성 시점의 값"에 고정된다.(클로저 문제) 콜백 함수가 오래된 상태(state)나 props를 참조하게 되어, 실제로는 최신 값을 사용해야 하는 상황에서 의도치 않은 동작이 발생할 수 있다.
+
+```
+`// 의존성 배열이 비어 있으므로, handleAlert는 최초 렌더 시점의 count만 기억함
+const handleAlert = useCallback(() => {
+  alert(`현재 count: ${count}`);
+}, []);
+`
+```
+
+ 
+
+setInterval, 이벤트 핸들러, 외부 라이브러리의 콜백 등에서 최신 상태를 항상 참조해야 할 때, useCallback만으로는 이 문제를 해결할 수 없다.
+
+####  
+
+#### ❌ useRef에 함수를 저장
+
+ 
+
+처음엔 단순히 useRef에 함수를 담고 반환하는 방식으로 구현했다.
+
+```
+`export const useAutoCallback = <T extends AnyFunction>(fn: T): T => {
+  // 항상 같은 함수 참조를 반환
+  const stableCallback = useRef((...args: any[]) => {
+    // 여기서 fn(...args)를 하면 클로저가 생성
+    // 최신 상태, props를 사용하는 fn을 받아도 처음 fn만 사용하게 됨
+    return fn(...args);
+  });
+
+  return stableCallback.current as T;
+};
+`
+```
+
+ 
+
+하지만 이 방식은 **최초에 캡처된 fn을 영원히 참조하기 때문에** 클로저에 묶인 값이 바뀌어도 반영되지 않았다. 즉, console.log(count) 같은 내부 로직이 **오래된 count**를 계속 찍는 문제가 있었다.
+
+####  
+
+#### ✅ 최신 fn을 useRef에 저장
+
+ 
+
+이걸 해결하려면 최신 fn을 계속 추적해야 한다는 걸 알았고, 다음과 같이 고쳤다:
+
+```
+`export const useAutoCallback = <T extends AnyFunction>(fn: T): T => {
+  const fnRef = useRef(fn);
+  fnRef.current = fn; // 최신 fn을 항상 즉시 반영
+
+  // 항상 같은 함수 참조를 반환
+  const stableCallback = useRef((...args: unknown[]) => {
+    return fnRef.current(...args);
+  });
+
+  return stableCallback.current as T;
+};
+`
+```
+
+ 
+
+내부에서 사용하는 fnRef.current는 항상 최신 fn을 가리키므로, 콜백 함수가 항상 최신 상태/props를 사용할 수 있다.
+
+#  
+
+## 깨달은 것
+
+많은 사람들이 useMemo, useCallback, React.memo 등을 보면 “성능 최적화니까 무조건 써야지!“라고 생각하지만, 실제로는 **무조건 사용하는 게 아니라, “필요할 때만” 사용하는 것**이 더 중요하다.
+
+####  
+
+#### 1) 메모이제이션의 본질
+
+> 
+**메모이제이션(memoization)은 ‘연산 결과’를 기억해서, 같은 입력이 들어오면 계산을 다시 하지 않고 저장된 값을 돌려주는 최적화 기법**
+
+ 
+
+즉, **비용이 큰 연산을 줄이기 위한 것**이지, 무조건 리렌더링을 막기 위한 도구는 아니다.
+
+####  
+
+#### **✅ 메모이제이션이 효과적인 경우**
+
+- props 또는 state가 자주 바뀌지 않는데도 리렌더링이 자주 일어나는 경우
+
+- 계산량이 많은 함수 (n^2, 재귀, 정렬, 필터 등)
+
+- 자식 컴포넌트가 불필요하게 리렌더링되는 상황
+
+```
+`const filteredItems = useMemo(() => {
+  return items.filter((item) => expensiveCheck(item));
+}, [items]);
+`
+```
+
+ 
+
+이런 경우는 items가 바뀌지 않았다면 filter()를 다시 돌릴 필요가 없기 때문에, **계산 비용을 줄이기 위해 useMemo가 필요하다.**
+
+####  
+
+#### **❌ 불필요한 메모이제이션의 예**
+
+```
+`function Parent() {
+  const [count, setCount] = useState(0);
+
+  const handleClick = useCallback(() => {
+    console.log("clicked");
+  }, []);
+
+  return (
+    <div>
+      <button onClick={() => setCount(count + 1)}>Increase</button>
+      <Child onClick={handleClick} />
+    </div>
+  );
+}
+
+const Child = React.memo(({ onClick }: { onClick: () => void }) => {
+  console.log("Child rendered");
+  return <button onClick={onClick}>Click me</button>;
+});
+`
+```
+
+ 
+
+이 코드는 얼핏 보면 성능 최적화가 되어 있는 것처럼 보인다. 하지만…
+
+- handleClick은 내부적으로 console.log()만 하는 **가벼운 함수이기 때문에 메모이제이션이 불필요하다. 오히려 메모리 비용만 추가된다.**
+
+- Child는 React.memo 되어 있어서, onClick의 참조가 바뀌지 않는 한 리렌더링되지 않는다. onClick이 useCallback으로 감싸져 있고 의존성 배열이 비어있으므로 onClick의 참조가 변경될 일이 없다. 그러므로 불필요한 메모이제이션이다.
+
+####  
+
+#### **✅ 언제 메모이제이션을 사용해야 하는가?**
+
+- “어떤 연산이 반복되거나 불필요하게 발생하는가?”
+
+- “이 연산을 캐싱할 필요가 있는가?”
+
+- “이 연산을 캐싱하는 게 정말 성능상 이득이 있는가?”
+
+위 질문에 **“예”라고 자신 있게 말할 수 있을 때만** 사용하는 게 진짜 최적화다. 불필요한 메모이제이션은 오히려 **성능과 코드 품질 모두를 해칠 수 있다**는 걸 알게 됐다.
+
+#  
+
+## 마치며
+
+이번 과제를 통해 React 내장 훅들을 직접 구현해보면서, 각각의 훅이 어떤 역할을 하고, 주어진 요구사항을 만족시키기 위해 어떤 방식으로 동작해야 하는지를 깊이 고민해볼 수 있었다.
+
+ 
+
+이 과정을 거치며 React가 단순히 “사용”하는 기술이 아니라, **어떻게 작동하는지를 이해하는 대상**으로 느껴졌고, 매번 당연하게만 여겼던 내부 동작에도 이유가 있다는 걸 체감했다.
+
+ 
+
+챕터 1을 마무리하며 문득, React와 조금 더 가까워졌다는 기분이 든다. 앞으로도 알아야 할 것, 마주칠 개념들이 수두룩하겠지만, **분명한 건 지금보다 훨씬 더 깊은 눈으로 React를 바라볼 수 있게 됐다!  
+  
+  
++ BP 받았습니다!  
+**
+
+![](/images/tistory/hanghaePlus-week3-react-hooks/951206d90493.png)
+
+            
+
+                    
+  
+공유하기

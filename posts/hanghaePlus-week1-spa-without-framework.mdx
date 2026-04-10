@@ -1,0 +1,564 @@
+---
+title: "항해플러스 프론트엔드 6기 1주차 : 프레임워크 없이 SPA 만들기"
+description: "이번 과제를 되돌아보면, 모든 순간이 고난과 역경, 그리고 시련이었다. 우선 압도적인 작업량에 기가 눌려 '이 과제를 통과하려면 눈을 뜨고 있는 동안엔 과제만 해야겠다'라고 다짐했고, 실제로 아침에 출근해 일하고, 점심시간에도 과제를 하고, 퇴근 후 새벽까지 노트..."
+date: "2025-07-13"
+category: "회고"
+tags: ["항해플러스"]
+---
+
+![](/images/tistory/hanghaePlus-week1-spa-without-framework/090564aab5ff.jpg)
+
+![](/images/tistory/hanghaePlus-week1-spa-without-framework/d93519ec798b.jpg)
+
+ 
+
+ 
+
+이번 과제를 되돌아보면, 모든 순간이 고난과 역경, 그리고 시련이었다.
+
+ 
+
+우선 압도적인 작업량에 기가 눌려 **'이 과제를 통과하려면 눈을 뜨고 있는 동안엔 과제만 해야겠다'**라고 다짐했고, 실제로 아침에 출근해 일하고, 점심시간에도 과제를 하고, 퇴근 후 새벽까지 노트북을 붙잡는 생활을 일주일 내내 반복했다.
+
+ 
+
+이걸 앞으로 9번이나 더 해야 한다니… **'과연 나는 잘 해낼 수 있을까?'**라는 생각도 들었다.
+
+하지만 그만큼 치열하게 부딪힌 덕분에, 리액트가 개발자 대신 얼마나 많은 걸 해결해주는지 몸으로 느꼈다.
+
+클라이언트 라우팅, 컴포넌트 생애주기 관리, 가상 DOM 기반의 효율적인 렌더링…
+
+ 
+
+SPA를 바닐라 자바스크립트로 직접 구현하면서 문제를 만날 때마다 **'리액트는 신이다!'**라는 말을 외칠 수밖에 없었다.
+
+ 
+
+이 글에서는 SPA를 만들며 마주했던 문제와 내가 선택한 해결 방식을 되돌아보고자 한다.
+
+(리액트는 이런 문제들을 어떻게 해결하는지는 항해 수료 후 별도의 글에서 정리할 예정이다.)
+
+ 
+
+## 주제와 목표
+
+1주차 과제의 주제는 "프레임워크 없이 SPA 만들기"였다. 처음에는 '라우팅 만들기'와 '컴포넌트 렌더링' 정도가 핵심일 거라 생각했는데, 생각보다 훨씬 많은 문제들이 있었다.
+
+ 
+
+## 라우터: 싱글톤 패턴으로 클라이언트 라우팅 구현하기
+
+SPA의 핵심은 경로가 바뀌어도 깜빡임(새로고침) 없이 화면이 전환되는 거다. 즉, 클라이언트 라우팅에서는 브라우저의 기본 동작처럼 문서를 서버에 요청하지 않고, 기존 문서에서 JS가 DOM만 갱신한다.
+
+이를 위해 구현한 핵심 동작은 아래와 같다.
+
+1. **경로 변경 감지하기**
+
+1. **현재 경로에 맞는 컴포넌트 렌더링하기**
+
+1. **쿼리 파라미터 파싱**
+
+라우터는 상태와 동작을 관리해야 하니 클래스로 만들고, 인스턴스의 유일성을 보장하기 위해 **싱글톤 패턴**을 적용했다.
+
+```
+`// Router.js
+export class Router {
+  constructor(routes, rootElement) {
+    this.routes = routes;
+    this.rootElement = rootElement;
+    this.queryParams = {};
+    this.params = {};
+
+    // 전역 라우터 인스턴스로 설정
+    Router.instance = this;
+
+    this.init();
+  }
+
+  init() {
+    // popstate 이벤트 (뒤로/앞으로)
+    window.addEventListener("popstate", () => {
+      this.handleRouteChange();
+    });
+
+    this.handleRouteChange();
+  }
+
+  // URL이 변경될 때마다 수행할 동작
+  handleRouteChange() {
+    // URL이 변경될 때마다 쿼리 파라미터와 경로 파라미터 파싱
+    this.parseQueryParams();
+    this.render();
+  }
+
+  // routes에서 정의한 내용대로 경로에 맞는 컴포넌트를 rootElement에 렌더링
+  render() {
+    const route = this.getCurrentRoute();
+
+    // 기존 인스턴스 제거
+    if (this.currentInstance && this.currentInstance.destroy) {
+      this.currentInstance.destroy();
+    }
+
+    // 새 컴포넌트 인스턴스 생성
+    const ComponentClass = route.component;
+
+    this.currentInstance = new ComponentClass(this.rootElement, {
+      params: this.params,
+      query: this.queryParams,
+    });
+  }
+  
+  // navigate 함수에서도 handleRouteChange를 수행한다.
+  navigate(to, replace = false) {
+    // 경로 정규화: 쿼리스트링 앞의 / 제거
+    const normalizedPath = this.normalizePath(to);
+
+    if (replace) {
+      window.history.replaceState(null, "", normalizedPath);
+    } else {
+      window.history.pushState(null, "", normalizedPath);
+    }
+
+    this.handleRouteChange();
+  }
+
+	// ...생략
+	
+  // 싱글톤 인스턴스 반환
+  static getInstance() {
+    return Router.instance;
+  }
+}`
+```
+
+#  
+
+## 컴포넌트 - 생애주기 지옥
+
+가장 어려웠던 부분은 상태가 변경될 때마다 컴포넌트를 어떻게 재렌더링할지를 설계하는 거였다.
+
+처음에는 함수형으로 만들었지만 생애주기를 어떻게 컨트롤할 지 몰라, 리액트의 클래스 컴포넌트처럼 생애주기 메서드를 가진 형태로 다시 구현했다.
+
+리액트에서는 useEffect의 의존성 배열이나 cleanup 함수가 알아서 처리해주는 것들을 모두 수동으로 관리해서 생각보다 훨씬 어려웠다.
+
+```
+`// Component.js
+export default class Component {
+  constructor($target, props) {
+    this.$target = $target; // 부모 DOM 요소 지정
+    this.props = props; // props 지정
+    this.state = {}; // 초기 상태 설정
+    this.child = new Map(); // 하위 컴포넌트 저장 (중복 인스턴스 방지)
+
+    this.setup(); // 초기 상태 설정
+    this.render(); // 초기 렌더링
+  }
+
+  setup() {
+    // 초기 상태를 정의하거나 비동기 데이터 요청 등 초기화 작업
+  }
+
+  mounted() {
+    // DOM이 렌더링된 후 실행할 로직 (ex: DOM 접근, 포커스 설정 등)
+  }
+
+  template() {
+    // 현재 상태와 props를 기반으로 HTML 문자열 반환
+    return "";
+  }
+
+  render() {
+    this.$target.innerHTML = this.template();
+    this.setEvent();
+    this.mounted?.();
+  }
+
+  setState(newState) {
+    this.state = { ...this.state, ...newState };
+    this.render();
+  }
+  
+  setEvent() {
+  // 이벤트 바인딩
+  }
+
+  cleanup() {
+    // 기존 이벤트/자원을 정리하는 훅
+  }
+
+  destroy() {
+    this.cleanup();
+    this.child.forEach((child) => child.cleanup?.());
+    this.child.clear();
+    this.$target.innerHTML = "";
+  }
+}`
+```
+
+#### **좀비 컴포넌트 문제 해결**
+
+홈 페이지에서 상품 상세 페이지로 이동했을 때, 홈 페이지 인스턴스가 남아있어서 전역 상태 변경 시 홈 화면이 렌더링되는 **좀비 컴포넌트 문제**가 발생했다. 이를 해결하기 위해 라우터에서 페이지 전환 시 기존 인스턴스를 확실히 destroy()하도록 코드를 추가했다.
+
+```
+`  // Router의 render 메서드
+  render() {
+    const route = this.getCurrentRoute();
+
+    // 기존 페이지 인스턴스가 있으면 destroy
+    if (this.currentInstance && this.currentInstance.destroy) {
+      this.currentInstance.destroy();
+    }
+    
+    // ...새로운 페이지 컴포넌트 렌더링 로직 생략
+  }
+`
+```
+
+#### **자식 컴포넌트 관리**
+
+페이지 컴포넌트가 재렌더링될 때마다 하위 컴포넌트의 새로운 인스턴스가 계속 생성되어 하위 컴포넌트가 초기화되는 문제가 있었다. 이러한 문제로 인해 자식 컴포넌트를 관리해줘야한다는 것을 깨달았다.
+
+이를 막기 위해 Map으로 자식 컴포넌트를 캐싱해두고, 이미 생성된 인스턴스는 render()만 호출하도록 관리했다.
+
+```
+`// HomePage.js
+mounted() {
+    const $filterContainer = document.querySelector("#filter-container");
+    const $productListContainer = document.querySelector("#product-list-container");
+    const $headerContainer = document.querySelector("#header-container");
+
+    if (!this.child.get(CHILD_COMPONENT.HEADER)) {
+      const headerInstance = new Header($headerContainer);
+      this.addChild(headerInstance, CHILD_COMPONENT.HEADER);
+    } else {
+      const headerInstance = this.child.get(CHILD_COMPONENT.HEADER);
+      headerInstance.$target = $headerContainer;
+      headerInstance.render();
+    }
+
+    if (!this.child.get(CHILD_COMPONENT.FILTER)) {
+      const filterInstance = new Filter($filterContainer);
+      this.addChild(filterInstance, CHILD_COMPONENT.FILTER);
+    } else {
+      const filterInstance = this.child.get(CHILD_COMPONENT.FILTER);
+      filterInstance.$target = $filterContainer;
+      filterInstance.render();
+    }
+
+    if (!this.child.get(CHILD_COMPONENT.PRODUCT_LIST)) {
+      const productListInstance = new ProductList($productListContainer);
+      this.addChild(productListInstance, CHILD_COMPONENT.PRODUCT_LIST);
+    } else {
+      const productListInstance = this.child.get(CHILD_COMPONENT.PRODUCT_LIST);
+      productListInstance.$target = $productListContainer;
+      productListInstance.render();
+    }
+  }
+`
+```
+
+ 
+
+다만 코드가 너무 장황하고 마음에 들지 않아, 자식 컴포넌트 관리 로직을 Component에 더 잘 녹여넣을 방법이 없을지 고민 중이다.
+
+#  
+
+## 전역 상태 관리: 싱글톤 + 옵저버 패턴
+
+전역 상태는 **싱글톤 + 옵저버 패턴**으로 구현했다. 싱글톤으로 유일성을 보장하고, 옵저버 패턴으로 상태가 바뀔 때 구독자들에게 알림을 보내 재렌더링하도록 했다.
+
+```
+`// Store.js
+export default class Store {
+  static #instance;
+
+  #state;
+  #observers;
+
+  constructor(initialState) {
+    if (Store.#instance) {
+      return Store.#instance; // 이미 있으면 그거 반환
+    }
+
+    this.#state = { ...initialState };
+    this.#observers = new Set();
+
+    Store.#instance = this; // 최초 생성된 인스턴스를 저장
+  }
+
+  // 현재 상태 반환
+  getState() {
+    return { ...this.#state };
+  }
+
+  // 상태 업데이트
+  setState(partialState) {
+    // 깊은 복사를 위한 재귀 함수
+    const deepMerge = (target, source) => {
+      const result = { ...target };
+
+      for (const key in source) {
+        if (source[key] && typeof source[key] === "object" && !Array.isArray(source[key])) {
+          result[key] = deepMerge(target[key] || {}, source[key]);
+        } else {
+          result[key] = source[key];
+        }
+      }
+
+      return result;
+    };
+
+    this.#state = deepMerge(this.#state, partialState);
+    this.#notify();
+  }
+
+  // 구독자 등록
+  subscribe(observer) {
+    this.#observers.add(observer);
+    observer(this.getState()); // 초기 상태도 바로 알려줌
+
+    // 구독 해제 함수 반환
+    return () => {
+      this.#observers.delete(observer);
+    };
+  }
+
+  // 구독자에게 상태 변경 알림
+  #notify() {
+    this.#observers.forEach((observer) => observer(this.getState()));
+  }
+}
+`
+```
+
+가장 큰 어려움은 **상태 구독과 구독 해제**였다. 컴포넌트에서 스토어를 구독하면 상태 변경 시 재렌더링이 일어나는데, 컴포넌트가 파괴될 때 구독을 해제하지 않으면 메모리 누수가 발생한다는 것을 알게 됐다.
+
+#  
+
+## 기술적으로 배운 것들
+
+#### **1. 싱글톤과 옵저버 패턴**
+
+이론적으로 들어만 봤던 디자인 패턴이지 실제로 사용해본 적은 없었다. 이 기회를 통해 직접 패턴을 실제로 적용해보며 어디서 왜 필요한지 제대로 알게 됐다. 전역 스토어에 옵저버 패턴이 많이 사용된다고 하여 Redux나 Zustand와 같은 경우 상태가 바뀌었을 때 해당 상태값을 사용하는 컴포넌트들에게 어떻게 상태 변경을 알리고 있는지 궁금해졌다.
+
+#### **2. this 바인딩**
+
+면접 공부용으로만 알고 있던 this 바인딩을, 이벤트 핸들러를 구현하면서 깊이 이해하게 됐다. 이벤트 핸들러로 메서드를 넘겼을 때 this가 클래스 인스턴스가 아닌 DOM 요소를 가리켜 상태에 접근하지 못하는 문제를 경험했다.
+
+```
+`// 이런 식으로 class의 메서드를 이벤트 핸들러로 등록하면...
+button.addEventListener('click', this.handleClick);
+
+// this가 DOM요소인 button 요소를 가리켜버린다!
+handleClick() {
+  console.log(this); // <button>...</button>
+  this.state.something; // 인스턴스의 state를 참조하고자하지만, DOM 요소를 가리켜 에러 발생!
+}`
+```
+
+이 문제를 해결하기 위해 bind()를 사용하거나 화살표 함수를 써야 한다는 걸 이론이 아닌 실제 에러로 배웠다.
+
+#### **3. 이벤트 관리의 중요성**
+
+리액트에서는 이벤트 핸들러가 컴포넌트와 함께 알아서 정리되지만, 바닐라에서는 직접 관리해야 했다. 상품 목록 아이템을 클릭하면 navigate가 중복 실행돼 히스토리 스택에 같은 URL이 여러 번 쌓였다. 이벤트를 꼭 cleanup()에서 제거해야 한다는 걸 알았다. 이후 모든 컴포넌트는 이벤트를 등록하면 cleanup()에서 반드시 제거하도록 했다.
+
+```
+`// 🔥 문제가 있던 코드
+render() {
+  this.$target.innerHTML = this.template();
+  this.setEvent(); // 매번 새로운 이벤트 리스너 등록
+}
+
+setEvent() {
+  // 이전 이벤트 리스너가 제거되지 않아 중복 등록됨
+  document.querySelectorAll('.product-item').forEach(item => {
+    item.addEventListener('click', this.handleProductClick);
+  });
+}
+
+cleanup(){
+	 document.querySelectorAll('.product-item').forEach(item => {
+    item.removeEventListener('click', this.handleProductClick);
+  });
+}`
+```
+
+ 
+
+이 또한 setEvent에서 등록, cleanup에서 해제하는 반복적인 코드가 비효율적이라고 생각되어 Component 메인 클래스에서 효율적으로 처리하는 방법에 대한 고민이 있다. 다시 구현한다면, Component 메인 클래스에서 이벤트 핸들러도 자식 컴포넌트를 Map으로 관리했던 것처럼 setEvent 메서드에서 'key'를 기반으로 Map에 저장하고, cleanup 메서드에서 해당 Map을 순회하면서 해제하도록 구현할 수 있을 것 같다.
+
+#### **4. 이벤트 위임**
+
+마지막에 알게 된 기술이지만, 이벤트 위임을 활용하면 불필요한 바인딩을 줄이고 효율적인 이벤트 처리가 가능하다는 걸 깨달았다. 이벤트 핸들러를 등록하고 이벤트 핸들러가 실행될 때 this는 이벤트 핸들러가 정의된 컴포넌트가 아닌 실행 위치에서 this가 결정되므로 DOM을 가리키게 된다. 이벤트 위임 방식이 이벤트 핸들러의 this 바인딩 문제를 해결할 수 있다는 것을 알게 됐다. 부분적으로 이벤트 위임 방식을 사용하긴 했지만, 단순 요소 select을 쉽게 하기 위해 사용했고, 이벤트 위임 방식이라는 걸 미리 알았다면 이벤트 관리 로직을 좀 더 효율적으로 구현할 수 있었을 것 같다.
+
+```
+`setup() {
+  this.handleProductClick = this.handleProductClick.bind(this);
+  
+  // 부모 요소에 한 번만 이벤트 등록
+  document.addEventListener('click', this.handleProductClick);
+}
+
+handleProductClick(e) {
+  // 이벤트 위임으로 동적 요소 처리
+  const productCard = e.target.closest('.product-card');
+  if (!productCard) return;
+
+  const productId = productCard.dataset.productId;
+  const navigate = useNavigate();
+  navigate(`/product/${productId}`);
+}
+
+cleanup() {
+  // 정확히 같은 함수 참조로 제거
+  document.removeEventListener('click', this.handleProductClick);
+}
+`
+```
+
+#  
+
+## 어려웠던 것과 고민들
+
+#### **1. 컴포넌트 생애주기의 복잡성**
+
+텍스트로만 학습했던 컴포넌트 생애주기를 직접 구현해보니 정말 복잡했다.
+
+- **언제 렌더링할지**: 상태 변경 시? props 변경 시? 부모 컴포넌트 렌더링 시?
+
+- **언제 이벤트를 바인딩할지**: 렌더링 후? 매번? 한 번만?
+
+- **언제 정리 작업을 할지**: 컴포넌트 파괴 시? 재렌더링 시?
+
+- **자식 컴포넌트는 어떻게 관리할지**: 매번 새로 생성? 캐싱?
+
+이 모든 것을 수동으로 관리하니 휴먼 에러가 발생할 가능성이 너무 높았다.
+
+React에서 useEffect의 의존성 배열이나 cleanup 함수가 얼마나 편리한지 깨달았다.
+
+#### **2. 인스턴스 관리의 어려움**
+
+홈 페이지에서 상품 상세 페이지로 이동했을 때, 홈 페이지 인스턴스가 완전히 제거되지 않아 메모리 누수가 발생하는 문제가 있었다.
+
+```
+`// 🔥 문제 상황
+// 홈 페이지 → 상품 상세 페이지로 이동 → 전역 상태 변경 → 홈 페이지 컴포넌트가 화면에 리렌더링됨!
+
+// HomePage.js
+setup() {
+  this.unsubscribe = homeStore.subscribe(() => {
+    // 현재 페이지가 홈이 아닌데도 실행됨
+    this.render();
+  });
+}`
+```
+
+ 
+
+이를 해결하기 위해 라우터에서 페이지 전환 시 기존 인스턴스를 완전히 파괴하는 코드를 추가했다.
+
+```
+`render() {
+    const route = this.getCurrentRoute();
+
+    // 기존 인스턴스가 있으면 unmount
+    if (this.currentInstance && this.currentInstance.destroy) {
+      this.currentInstance.destroy();
+    }
+
+    // 새 컴포넌트 인스턴스 생성
+    const ComponentClass = route.component;
+
+    this.currentInstance = new ComponentClass(this.rootElement, {
+      params: this.params,
+      query: this.queryParams,
+    });
+  }
+`
+```
+
+#### **3. 과도한 재렌더링 문제**
+
+렌더링이 단 한 번만 일어나지 않고, 상태가 바뀔 때마다 불필요하게 여러 컴포넌트가 재렌더링되는 현상을 확인했다. 이 경험을 통해 왜 리액트가 Virtual DOM을 통해 렌더링을 최소화하려 하는지 이해할 수 있었다.
+
+##  
+
+## 깨달은 것들
+
+#### **1. 리액트는 정말 신이다**
+
+이번 경험을 통해 React가 얼마나 많은 복잡성을 숨겨주고 있는지 깨달았다.
+
+- **상태 관리**: useState, useReducer, Context API로 간단하게 해결
+
+- **생애주기**: useEffect의 의존성 배열과 cleanup 함수로 깔끔하게 관리
+
+- **성능 최적화**: Virtual DOM, React.memo, useMemo로 효율적인 렌더링
+
+- **이벤트 처리**: 합성 이벤트 시스템으로 일관된 처리
+
+바닐라로 하나하나 구현해보니 React 개발자들이 얼마나 많은 고민을 했는지 느껴진다.
+
+#### **2. 기본기의 중요성**
+
+프레임워크를 쓸 때는 몰랐던 JavaScript의 기본 개념들을 정말 많이 배웠다:
+
+- **프로토타입 체인과 this 바인딩**: 이벤트 핸들러에서 this가 어떻게 결정되는지
+
+- **클로저와 스코프**: 이벤트 리스너에서 변수 접근 방식
+
+- **이벤트 루프와 비동기 처리**: throttle, debounce 구현
+
+- **DOM 조작과 성능**: 리플로우, 리페인트 최적화
+
+이런 기본기가 탄탄해야 프레임워크도 제대로 사용할 수 있다는 걸 절실히 느꼈다.
+
+#### **3. 아키텍처 설계의 중요성**
+
+작은 프로젝트였지만 아키텍처 설계가 얼마나 중요한지 깨달았다.
+
+- **컴포넌트 구조**: 재사용 가능하고 유지보수하기 쉬운 구조
+
+- **상태 관리**: 전역 상태와 지역 상태의 적절한 분리
+
+- **이벤트 시스템**: 효율적이고 안전한 이벤트 처리
+
+초기 설계가 프로젝트 전체의 복잡성을 결정한다는 걸 배웠다.
+
+##  
+
+## 마치며
+
+ 
+
+SPA를 직접 구현하며 리액트가 얼마나 많은 복잡한 문제들을 감추고 해결해주는지 깨달았다. 단순히 "React가 편하다"가 아니라, **"React가 왜 이렇게 설계되었는지", "어떤 문제를 해결하려고 했는지"**를 몸으로 체험했다.
+
+ 
+
+단순히 리액트 동작 원리 알아야지~가 아니라 실제로 불편함과 필요성을 절실히 느꼈기 때문에 **리액트 내부 구조와 동작 원리를 파헤쳐보고 싶은 욕구**가 생겼다. 앞으로 React를 사용할 때도 "왜 이렇게 동작하는지"를 더 깊이 이해하며 개발할 수 있을 것 같다.
+
+ 
+
+밤낮없이 하루 3-4시간씩 자며 회사 업무와 병행하며
+
+과제를 무사히 끝마친 나 정말 수고했다…!
+
+ 
+
+***남은 9번의 과제도 1주차의 이 치열함을 잊지 말고 열심히 달려나가보자!***
+
+ 
+
+![](/images/tistory/hanghaePlus-week1-spa-without-framework/936be022f947.jpg)
+버티자! 견디자! 즐기자!
+
+ 
+
+ 
+
+            
+
+                    
+  
+공유하기
