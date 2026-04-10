@@ -11,6 +11,8 @@ const NAV_LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
+const isDev = process.env.NODE_ENV !== "production";
+
 export default function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -91,7 +93,7 @@ export default function Header() {
                     {categories.map((cat) => (
                       <Link
                         key={cat}
-                        href={`/blog/${encodeURIComponent(cat)}`}
+                        href={`/blog?category=${encodeURIComponent(cat)}`}
                         className="block px-3 py-1.5 rounded-lg text-sm text-[var(--muted)] hover:bg-brand-50 hover:text-[var(--fg)] transition-colors"
                       >
                         {cat}
@@ -103,7 +105,7 @@ export default function Header() {
             </div>
           </div>
 
-          {NAV_LINKS.map(({ href, label }) => (
+          {NAV_LINKS.filter(() => isDev).map(({ href, label }) => (
             <Link
               key={href}
               href={href}
@@ -182,7 +184,7 @@ export default function Header() {
                   {categories.map((cat) => (
                     <Link
                       key={cat}
-                      href={`/blog/${encodeURIComponent(cat)}`}
+                      href={`/blog?category=${encodeURIComponent(cat)}`}
                       className="block px-3 py-2.5 rounded-lg text-[var(--muted)] hover:bg-brand-50 hover:text-[var(--fg)] transition-colors"
                     >
                       {cat}
@@ -191,9 +193,9 @@ export default function Header() {
                 </div>
               ))}
 
-              <div className="my-2 border-t border-[var(--border)]" />
+              {isDev && <div className="my-2 border-t border-[var(--border)]" />}
 
-              {NAV_LINKS.map(({ href, label }) => (
+              {NAV_LINKS.filter(() => isDev).map(({ href, label }) => (
                 <Link
                   key={href}
                   href={href}

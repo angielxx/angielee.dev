@@ -13,7 +13,7 @@ export default function Footer() {
           </Link>
 
           <p className="text-xs text-[var(--muted)]">
-            프론트엔드 개발자 angielee의 블로그
+            프론트엔드 개발자 Angie Lee(이은지)의 블로그
           </p>
 
           {/* 소셜 링크 */}
