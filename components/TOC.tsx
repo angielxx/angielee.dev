@@ -53,6 +53,7 @@ export default function TOC({ items }: TOCProps) {
                   if (el) {
                     const top = el.getBoundingClientRect().top + window.scrollY - 88;
                     window.scrollTo({ top, behavior: "smooth" });
+                    history.pushState(null, "", `#${item.id}`);
                   }
                   setActiveId(item.id);
                 }}
