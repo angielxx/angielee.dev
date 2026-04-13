@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
+import { AUTHOR_EMAIL } from "@/lib/site";
 
 const container: Variants = {
   hidden: {},
@@ -53,7 +54,7 @@ export default function HeroSection() {
           variants={item}
           className="text-sm text-[var(--muted)] mb-10"
         >
-          hello@angielee.dev
+          {AUTHOR_EMAIL}
         </motion.p>
 
         <motion.div variants={item} className="flex flex-wrap gap-3">

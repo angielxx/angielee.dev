@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AUTHOR_EMAIL, AUTHOR_GITHUB } from "@/lib/site";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -19,7 +20,7 @@ export default function Footer() {
           {/* 소셜 링크 */}
           <div className="flex items-center gap-4">
             <a
-              href="https://github.com/angielxx"
+              href={AUTHOR_GITHUB}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub"
@@ -30,7 +31,7 @@ export default function Footer() {
               </svg>
             </a>
             <a
-              href="mailto:hello@angielee.dev"
+              href={`mailto:${AUTHOR_EMAIL}`}
               aria-label="이메일"
               className="text-[var(--muted)] hover:text-[var(--fg)] transition-colors"
             >

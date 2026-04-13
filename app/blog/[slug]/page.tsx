@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import { getAllSlugs, getPostBySlug, getSeriesPosts } from "@/lib/posts";
+import { SITE_URL, AUTHOR_NAME } from "@/lib/site";
 import { extractToc } from "@/lib/toc";
 import TagBadge from "@/components/TagBadge";
 import SeriesNav from "@/components/SeriesNav";
@@ -75,8 +76,8 @@ export default async function BlogPostPage({ params }: Props) {
     datePublished: post.date,
     author: {
       "@type": "Person",
-      name: "angielee",
-      url: "https://angielee.dev",
+      name: AUTHOR_NAME,
+      url: SITE_URL,
     },
     ...(post.thumbnail && { image: post.thumbnail }),
   };
