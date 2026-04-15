@@ -234,6 +234,31 @@ body {
   height: auto;
 }
 
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.prose th {
+  font-weight: 600;
+  text-align: left;
+  padding: 0.6rem 1rem;
+  border-bottom: 2px solid var(--border);
+  color: var(--fg);
+}
+
+.prose td {
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--prose-body);
+}
+
+.prose tbody tr:last-child td {
+  border-bottom: none;
+}
+
 /* ── 로고 shimmer 애니메이션 ──────────────────────── */
 
 @keyframes gradient-shimmer {

@@ -40,12 +40,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 const mdxOptions = {
-  mdxOptions: {
-    remarkPlugins: [remarkGfm],
-    rehypePlugins: [
-      rehypeSlug,
-      [rehypeAutolinkHeadings, { behavior: "wrap" }],
-    ] as never,
+  options: {
+    mdxOptions: {
+      remarkPlugins: [remarkGfm],
+      rehypePlugins: [
+        rehypeSlug,
+        [rehypeAutolinkHeadings, { behavior: "wrap" }],
+      ] as never,
+    },
   },
 };
 
