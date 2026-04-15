@@ -12,8 +12,6 @@ const NAV_LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
-const isDev = process.env.NODE_ENV !== "production";
-
 export default function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -27,6 +25,7 @@ export default function Header() {
 
   // 페이지 이동 시 모바일 메뉴 닫기
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMenuOpen(false);
   }, [pathname]);
 
@@ -105,7 +104,7 @@ export default function Header() {
             </div>
           </div>
 
-          {NAV_LINKS.filter(() => isDev).map(({ href, label }) => (
+          {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
@@ -198,9 +197,9 @@ export default function Header() {
                 </div>
               ))}
 
-              {isDev && <div className="my-2 border-t border-[var(--border)]" />}
+              <div className="my-2 border-t border-[var(--border)]" />
 
-              {NAV_LINKS.filter(() => isDev).map(({ href, label }) => (
+              {NAV_LINKS.map(({ href, label }) => (
                 <Link
                   key={href}
                   href={href}

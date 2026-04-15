@@ -16,13 +16,11 @@ const item: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } },
 };
 
-const isDev = process.env.NODE_ENV !== "production";
-
 export default function HeroSection() {
   return (
     <motion.section
       variants={container}
-      initial="hidden"
+      initial={false}
       animate="show"
       className="relative pt-28 pb-24 overflow-hidden"
     >
@@ -67,14 +65,12 @@ export default function HeroSection() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
           </Link>
-          {isDev && (
-            <Link
-              href="/about"
-              className="inline-flex items-center px-5 py-2.5 rounded-full border border-[var(--border)] text-sm font-medium text-[var(--muted)] hover:border-brand-500 hover:text-brand-600 transition-colors"
-            >
-              소개
-            </Link>
-          )}
+          <Link
+            href="/about"
+            className="inline-flex items-center px-5 py-2.5 rounded-full border border-[var(--border)] text-sm font-medium text-[var(--muted)] hover:border-brand-500 hover:text-brand-600 transition-colors"
+          >
+            소개
+          </Link>
         </motion.div>
       </div>
     </motion.section>

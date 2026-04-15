@@ -1,14 +1,29 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { getAllPosts } from "@/lib/posts";
 import { CATEGORIES } from "@/lib/categories";
-import type { Category } from "@/lib/categories";
 import PostCard from "@/components/PostCard";
 import CategoryFilter from "@/components/CategoryFilter";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "블로그",
   description: "프론트엔드, 회고, 일상, 독서에 관한 글들",
+  alternates: {
+    canonical: `${SITE_URL}/blog`,
+  },
+  openGraph: {
+    title: "블로그",
+    description: "프론트엔드, 회고, 일상, 독서에 관한 글들",
+    url: `${SITE_URL}/blog`,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "블로그",
+    description: "프론트엔드, 회고, 일상, 독서에 관한 글들",
+  },
 };
 
 interface BlogPageProps {
@@ -60,9 +75,9 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
           <span className="px-2.5 py-0.5 rounded-full bg-[var(--tag-bg)] text-[var(--tag-text)] border border-brand-200 font-medium">
             #{tag}
           </span>
-          <a href="/blog" className="text-brand-600 hover:underline">
+          <Link href="/blog" className="text-brand-600 hover:underline">
             지우기
-          </a>
+          </Link>
         </div>
       )}
 

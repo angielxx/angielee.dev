@@ -26,11 +26,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: post.title,
       description: post.description,
+      alternates: {
+        canonical: `${SITE_URL}/blog/${slug}`,
+      },
       openGraph: {
         title: post.title,
         description: post.description,
         type: "article",
         publishedTime: post.date,
+        url: `${SITE_URL}/blog/${slug}`,
         ...(post.thumbnail && { images: [{ url: post.thumbnail }] }),
       },
     };
@@ -75,11 +79,23 @@ export default async function BlogPostPage({ params }: Props) {
     "@type": "BlogPosting",
     headline: post.title,
     description: post.description,
+    url: `${SITE_URL}/blog/${post.slug}`,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${SITE_URL}/blog/${post.slug}`,
+    },
     datePublished: post.date,
+    dateModified: post.date,
+    inLanguage: "ko",
     author: {
       "@type": "Person",
+      "@id": `${SITE_URL}/#person`,
       name: AUTHOR_NAME,
-      url: SITE_URL,
+    },
+    publisher: {
+      "@type": "Person",
+      "@id": `${SITE_URL}/#person`,
+      name: AUTHOR_NAME,
     },
     ...(post.thumbnail && { image: post.thumbnail }),
   };
