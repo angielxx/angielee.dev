@@ -29,7 +29,7 @@ export default function PostCard({ post }: PostCardProps) {
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       whileHover={{ y: -4 }}
-      className="rounded-xl border border-[var(--border)] bg-brand-surface overflow-hidden group
+      className="rounded-xl border border-[var(--border)] bg-[var(--ds-surface)] overflow-hidden group
                  hover:[box-shadow:4px_4px_0px_0px_var(--ds-accent)] transition-[transform] duration-200"
     >
       <Link href={`/blog/${slug}`} className="block h-full">

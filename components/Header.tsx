@@ -24,7 +24,7 @@ export default function Header() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="sticky top-0 z-50 w-full backdrop-blur-md bg-brand-bg/85 border-b border-[var(--border)]"
+      className="sticky top-0 z-50 w-full backdrop-blur-md bg-[var(--ds-header-bg)] border-b border-[var(--border)]"
     >
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* 워드마크 */}

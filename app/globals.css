@@ -49,15 +49,18 @@
   --shadow-brand-brutal: 4px 4px 0px 0px #00F0FF;
 }
 
-/* ── 네오브루탈 디자인 시스템 CSS 변수 (라이트 기본값) ─── */
+/* ── 네오브루탈 디자인 시스템 CSS 변수 ─── */
 
+/* 라이트 기본값 */
 :root {
-  --ds-bg:        #f8f9fa;
-  --ds-surface:   #f1f5f9;
-  --ds-accent:    #0891b2;
-  --ds-text-main: #1a1a2e;
-  --ds-text-sub:  #64748b;
+  --ds-bg:         #f8f9fa;
+  --ds-surface:    #ffffff;
+  --ds-accent:     #0891b2;
+  --ds-text-main:  #1a1a2e;
+  --ds-text-sub:   #64748b;
+  --ds-header-bg:  rgba(255, 255, 255, 0.85);
 }
+
 
 /* ── 라이트 모드 ─────────────────────────────────── */
 
@@ -130,6 +133,7 @@
   --ds-accent:    #00F0FF;
   --ds-text-main: #F8FAFC;
   --ds-text-sub:  #94A3B8;
+  --ds-header-bg: rgba(11, 15, 25, 0.85);
 }
 
 /* 다크 모드: 미세 바둑판 그리드 패턴 */
