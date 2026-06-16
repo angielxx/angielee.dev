@@ -10,6 +10,7 @@ import { extractToc } from "@/lib/toc";
 import TagBadge from "@/components/TagBadge";
 import SeriesNav from "@/components/SeriesNav";
 import TOC from "@/components/TOC";
+import CodeBlock from "@/components/CodeBlock";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -53,6 +54,7 @@ const mdxOptions = {
       ] as never,
     },
   },
+  components: { pre: CodeBlock },
 };
 
 export default async function BlogPostPage({ params }: Props) {

@@ -76,7 +76,7 @@ export default function RootLayout({
         className={`${firaCode.variable} antialiased`}
       >
         <Header />
-        <main className="pt-16 min-h-screen">{children}</main>
+        <main className="min-h-screen">{children}</main>
         <Footer />
       </body>
     </html>
