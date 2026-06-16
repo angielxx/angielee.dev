@@ -49,14 +49,14 @@
   --shadow-brand-brutal: 4px 4px 0px 0px #00F0FF;
 }
 
-/* ── 네오브루탈 디자인 시스템 CSS 변수 (고정값) ─── */
+/* ── 네오브루탈 디자인 시스템 CSS 변수 (라이트 기본값) ─── */
 
 :root {
-  --ds-bg:        #0B0F19;
-  --ds-surface:   #161C2A;
-  --ds-accent:    #00F0FF;
-  --ds-text-main: #F8FAFC;
-  --ds-text-sub:  #94A3B8;
+  --ds-bg:        #f8f9fa;
+  --ds-surface:   #f1f5f9;
+  --ds-accent:    #0891b2;
+  --ds-text-main: #1a1a2e;
+  --ds-text-sub:  #64748b;
 }
 
 /* ── 라이트 모드 ─────────────────────────────────── */
@@ -77,18 +77,19 @@
   --pastel-yellow:   #ecfdf5;
   --pastel-mint:     #6ee7b7;
 
-  --brand-50:  #f0fdf4;
-  --brand-100: #dcfce7;
-  --brand-200: #bbf7d0;
-  --brand-500: #22c55e;
-  --brand-600: #16a34a;
-  --brand-700: #15803d;
-  --brand-900: #14532d;
+  /* 브랜드 컬러: 사이버 시안 계열 (라이트) */
+  --brand-50:  #ecfeff;
+  --brand-100: #cffafe;
+  --brand-200: #a5f3fc;
+  --brand-500: #06b6d4;
+  --brand-600: #0891b2;
+  --brand-700: #0e7490;
+  --brand-900: #164e63;
 
   --accent:   var(--brand-500);
   --link:     var(--brand-600);
-  --tag-bg:   #dcfce7;
-  --tag-text: #166534;
+  --tag-bg:   #cffafe;
+  --tag-text: #0e7490;
 }
 
 /* ── 다크 모드 (사이버 시안 테마) ───────────────── */
@@ -122,6 +123,13 @@
   --link:     var(--brand-600);
   --tag-bg:   #001820;
   --tag-text: #00F0FF;
+
+  /* 다크 모드 DS 토큰 오버라이드 */
+  --ds-bg:        #0B0F19;
+  --ds-surface:   #161C2A;
+  --ds-accent:    #00F0FF;
+  --ds-text-main: #F8FAFC;
+  --ds-text-sub:  #94A3B8;
 }
 
 /* 다크 모드: 미세 바둑판 그리드 패턴 */

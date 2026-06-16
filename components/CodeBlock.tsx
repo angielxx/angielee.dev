@@ -19,9 +19,9 @@ export default function CodeBlock({ children, className }: CodeBlockProps) {
   }
 
   return (
-    <div className="relative my-6 rounded-xl overflow-hidden border border-white/10 bg-brand-surface shadow-brand-brutal">
+    <div className="relative my-6 rounded-xl overflow-hidden border border-[var(--fg)]/10 bg-[var(--pre-bg)] shadow-brand-brutal">
       {/* 상단 바 */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 bg-black/20">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--fg)]/10 bg-[var(--fg)]/5">
         {/* macOS 창 조절 버튼 */}
         <div className="flex items-center gap-1.5">
           <span className="block w-3 h-3 rounded-full bg-[#FF5F57]" />
@@ -35,7 +35,7 @@ export default function CodeBlock({ children, className }: CodeBlockProps) {
           className={`text-xs font-mono transition-colors duration-150 ${
             copied
               ? "text-brand-accent"
-              : "text-brand-text-sub hover:text-brand-text-main"
+              : "text-[var(--pre-fg)]/60 hover:text-[var(--pre-fg)]"
           }`}
         >
           {copied ? "Copied!" : "Copy"}

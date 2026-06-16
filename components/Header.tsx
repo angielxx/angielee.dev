@@ -24,7 +24,7 @@ export default function Header() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="sticky top-0 z-50 w-full backdrop-blur-md bg-brand-bg/80 border-b border-white/10"
+      className="sticky top-0 z-50 w-full backdrop-blur-md bg-brand-bg/85 border-b border-[var(--border)]"
     >
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* 워드마크 */}
@@ -64,7 +64,7 @@ export default function Header() {
               <div className="bg-brand-surface border border-white/10 rounded-xl shadow-lg p-2 min-w-[140px]">
                 <Link
                   href="/blog"
-                  className="block px-3 py-1.5 rounded-lg text-sm text-brand-text-sub hover:bg-white/5 hover:text-brand-text-main transition-colors"
+                  className="block px-3 py-1.5 rounded-lg text-sm text-brand-text-sub hover:bg-[var(--fg)]/5 hover:text-brand-text-main transition-colors"
                 >
                   전체 글
                 </Link>
@@ -78,7 +78,7 @@ export default function Header() {
                       <Link
                         key={cat}
                         href={`/blog?category=${encodeURIComponent(cat)}`}
-                        className="block px-3 py-1.5 rounded-lg text-sm text-brand-text-main opacity-80 hover:bg-white/5 hover:opacity-100 hover:text-brand-accent transition-colors"
+                        className="block px-3 py-1.5 rounded-lg text-sm text-brand-text-main opacity-80 hover:bg-[var(--fg)]/5 hover:opacity-100 hover:text-brand-accent transition-colors"
                       >
                         {cat}
                       </Link>
@@ -145,7 +145,7 @@ export default function Header() {
               <Link
                 href="/blog"
                 onClick={() => setMenuOpen(false)}
-                className="px-3 py-2.5 rounded-lg text-brand-text-sub hover:bg-white/5 hover:text-brand-text-main transition-colors"
+                className="px-3 py-2.5 rounded-lg text-brand-text-sub hover:bg-[var(--fg)]/5 hover:text-brand-text-main transition-colors"
               >
                 전체 글
               </Link>
@@ -160,7 +160,7 @@ export default function Header() {
                       key={cat}
                       href={`/blog?category=${encodeURIComponent(cat)}`}
                       onClick={() => setMenuOpen(false)}
-                      className="block px-3 py-2.5 rounded-lg text-brand-text-main opacity-80 hover:bg-white/5 hover:opacity-100 hover:text-brand-accent transition-colors"
+                      className="block px-3 py-2.5 rounded-lg text-brand-text-main opacity-80 hover:bg-[var(--fg)]/5 hover:opacity-100 hover:text-brand-accent transition-colors"
                     >
                       {cat}
                     </Link>
@@ -179,7 +179,7 @@ export default function Header() {
                     "px-3 py-2.5 rounded-lg transition-colors",
                     isActive(href)
                       ? "text-brand-accent font-medium bg-white/5"
-                      : "text-brand-text-sub hover:bg-white/5 hover:text-brand-text-main",
+                      : "text-brand-text-sub hover:bg-[var(--fg)]/5 hover:text-brand-text-main",
                   ].join(" ")}
                 >
                   {label}

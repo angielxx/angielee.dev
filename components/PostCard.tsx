@@ -29,8 +29,8 @@ export default function PostCard({ post }: PostCardProps) {
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       whileHover={{ y: -4 }}
-      className="rounded-xl border border-white/10 bg-brand-surface overflow-hidden group
-                 hover:[box-shadow:4px_4px_0px_0px_#00F0FF] transition-[transform] duration-200"
+      className="rounded-xl border border-[var(--border)] bg-brand-surface overflow-hidden group
+                 hover:[box-shadow:4px_4px_0px_0px_var(--ds-accent)] transition-[transform] duration-200"
     >
       <Link href={`/blog/${slug}`} className="block h-full">
         {/* 썸네일 */}
@@ -49,7 +49,7 @@ export default function PostCard({ post }: PostCardProps) {
         <div className={`p-5 flex flex-col gap-3 ${!thumbnail ? "border-l-2 border-brand-accent" : ""}`}>
           {/* 시리즈 배지 */}
           {series && (
-            <span className="inline-flex items-center gap-1 text-xs font-bold bg-white/10 text-brand-text-sub border border-white/10 rounded-full px-2.5 py-0.5 w-fit">
+            <span className="inline-flex items-center gap-1 text-xs font-bold bg-[var(--fg)]/10 text-brand-text-sub border border-[var(--border)] rounded-full px-2.5 py-0.5 w-fit">
               {series}
               {seriesOrder && <span className="opacity-70">#{seriesOrder}</span>}
             </span>
