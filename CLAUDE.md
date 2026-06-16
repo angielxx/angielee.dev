@@ -4,97 +4,79 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 개요
 
-**angielee.dev**는 프론트엔드 개발자의 개인 블로그 겸 포트폴리오 웹사이트입니다. Next.js 16 (App Router)을 기반으로 TypeScript, Tailwind CSS, MDX를 사용합니다.
-
-**핵심 특징:**
-- 한국어 기반 콘텐츠
-- 블로그 포스트는 MDX 파일 기반 (정적 사이트 생성)
-- 카테고리, 태그, 시리즈로 포스트 분류
-- Tailwind CSS와 CSS 변수를 이용한 다크모드 지원
-- SEO 최적화 (Schema.org JSON-LD)
+**angielee.dev**는 프론트엔드 개발자의 개인 블로그 겸 포트폴리오 웹사이트입니다. Next.js 16 (App Router) + TypeScript + Tailwind CSS 4 + MDX 기반의 정적 사이트입니다.
 
 ## 개발 명령어
 
 ```bash
-npm run dev      # 개발 서버 시작 (localhost:3000)
-npm run build    # 프로덕션 빌드
-npm start        # 프로덕션 서버 실행
-npm run lint     # ESLint 실행
+pnpm dev         # 개발 서버 (localhost:3000)
+pnpm build       # 프로덕션 빌드 (정적 생성 포함)
+pnpm lint        # ESLint 실행
 ```
 
-## 아키텍처 개요
+테스트 프레임워크는 설정되어 있지 않습니다.
 
-### 주요 디렉토리 구조
+## 아키텍처
 
-- **`app/`** — Next.js App Router 페이지
-  - `layout.tsx` — 루트 레이아웃 (Header, Footer, 메타데이터)
-  - `page.tsx` — 홈 페이지
-  - `blog/page.tsx` — 블로그 목록 (카테고리/태그 필터링)
-  - `blog/[slug]/page.tsx` — 블로그 상세 페이지 (정적 생성)
-  - `about/`, `contact/` — 정적 페이지
+### 핵심 상수
 
-- **`components/`** — 재사용 가능한 React 컴포넌트
-  - `Header.tsx`, `Footer.tsx` — 레이아웃 구성요소
-  - `PostCard.tsx` — 블로그 카드
-  - `CategoryFilter.tsx` — 필터 UI
-  - `TOC.tsx` — 목차 사이드바
-  - `TagBadge.tsx`, `SeriesNav.tsx` — 블로그 보조 컴포넌트
+**`lib/site.ts`** — `SITE_URL`, `SITE_NAME`, `AUTHOR_NAME` 등 사이트 전역 상수의 단일 진실 공급원. 메타데이터·JSON-LD·사이트맵 등 모든 곳에서 이 파일을 참조합니다.
 
-- **`lib/`** — 유틸리티 함수
-  - `posts.ts` — MDX 파일 읽기 및 필터링
-  - `categories.ts` — 카테고리/태그 타입 및 상수
-  - `toc.ts` — MDX 콘텐츠에서 제목 구조 추출
+**`lib/categories.ts`** — `Category` 타입과 `CATEGORIES` 배열. `fs`를 사용하지 않아 클라이언트/서버 양쪽에서 import 가능합니다.
 
-- **`posts/`** — 블로그 콘텐츠 (MDX 파일)
+### 블로그 포스트 파이프라인
 
-### 블로그 포스트 데이터 흐름
+1. `posts/*.mdx` 파일을 `fs.readdirSync`로 읽음 (빌드 타임 전용)
+2. `gray-matter`로 YAML 프론트매터 파싱 → `PostMeta` / `Post` 타입으로 반환
+3. `blog/[slug]/page.tsx`의 `generateStaticParams()`가 모든 슬러그를 정적 라우트로 생성
+4. MDX 본문은 `next-mdx-remote/rsc` (서버 컴포넌트)로 렌더링
 
-1. `posts/` 디렉토리의 MDX 파일 읽기 (파일명: `slug-name.mdx`)
-2. `gray-matter`로 YAML 프론트매터 파싱
-3. `lib/posts.ts`의 함수로 정렬 및 필터링
-4. `blog/[slug]/page.tsx`의 `generateStaticParams()`로 정적 라우트 생성
+`lib/posts.ts`의 모든 함수(`getAllPosts`, `getPostBySlug` 등)는 서버 전용입니다.
 
-### 포스트 프론트매터 필드
+### 포스트 프론트매터 스키마
 
 ```yaml
 title: 제목
 date: 2024-03-15
 description: 짧은 설명
-category: 프론트엔드  # 또는 회고, 일상, 독서
+category: React         # lib/categories.ts의 Category 타입 값
 tags: [react, nextjs]
-series: 시리즈명 (선택)
-seriesOrder: 1 (시리즈 순서)
-thumbnail: 썸네일 이미지 URL (선택)
+series: 시리즈명         # 선택
+seriesOrder: 1           # 선택, 시리즈 내 순서
+thumbnail: https://...   # 선택
 ```
 
-`readingTime`은 자동 계산됨 (한글 기준 분당 500자).
+`readingTime`은 `calcReadingTime()`이 자동 계산합니다 (한글 기준 분당 500자).
 
-### 주요 의존성
+### 블로그 목록 필터링
 
-- **Next.js 16.1.6** — React 프레임워크
-- **next-mdx-remote** — 서버 사이드 MDX 렌더링
-- **TailwindCSS 4** — 스타일링
-- **gray-matter** — YAML 프론트매터 파싱
-- **rehype/remark 플러그인** — Markdown 변환 (slug, autolink, GFM)
+`app/blog/page.tsx`는 URL searchParams(`?category=React&tag=nextjs`)로 필터링합니다. 클라이언트 상태는 없습니다. `CategoryFilter`는 searchParams를 읽기 때문에 반드시 `<Suspense>`로 감싸야 합니다.
 
-## 스타일링
+### TOC 생성
 
-- Tailwind CSS + CSS 변수 조합으로 다크모드 구현
-- 전역 스타일: `app/globals.css`
-- MDX 본문: Tailwind prose 플러그인
+`lib/toc.ts`의 `extractToc()`는 `github-slugger`로 헤딩 ID를 생성합니다. `rehype-slug`도 동일 라이브러리를 사용하므로 한국어 헤딩의 앵커 ID가 정확히 일치합니다.
 
-## 포스트 쿼리 함수 (`lib/posts.ts`)
+### 다크 모드
 
-```typescript
-getAllPosts()              // 날짜순 정렬된 모든 포스트
-getPostsByCategory(cat)    // 카테고리로 필터
-getPostsByTag(tag)         // 태그로 필터
-getSeriesPosts(name)       // 시리즈로 필터
-getAllTags()               // 모든 태그 (중복 제거, 정렬)
-```
+FOUC 방지를 위해 `app/layout.tsx`의 `<head>`에 인라인 스크립트를 삽입합니다. 이 스크립트는 `localStorage.getItem('theme')`을 읽어 페이지 로드 직후 `document.documentElement`에 `dark` 클래스를 추가합니다.
 
-## 메타데이터
+### 스타일링 시스템
 
-- 사이트 전역: `app/layout.tsx`
-- 페이지별: `generateMetadata()` 함수
-- Schema.org JSON-LD 마크업으로 SEO 최적화
+`app/globals.css`에서 CSS 변수(`--bg`, `--fg`, `--brand-*` 등)를 정의하고, `@theme inline` 블록으로 Tailwind 유틸리티(`text-brand-600`, `bg-background` 등)에 매핑합니다. 컴포넌트에서 CSS 변수를 직접 쓸 때는 `text-[var(--muted)]` 형태를 사용합니다.
+
+### 폰트
+
+- **Pretendard** — 한국어 본문용, CDN(`cdn.jsdelivr.net`)에서 로드. `@font-face`로 선언.
+- **Fira Code** — 코드 블록용, Next.js `next/font/google`으로 로드. CSS 변수 `--font-fira-code`로 주입.
+
+### SEO
+
+- `app/layout.tsx` — 전역 `WebSite` + `Person` JSON-LD
+- `app/blog/[slug]/page.tsx` — 개별 포스트 `BlogPosting` JSON-LD
+- `app/sitemap.ts` — 자동 생성 사이트맵
+- `app/robots.ts` — robots.txt
+- `next.config.ts` — 보안 헤더 (HSTS, X-Frame-Options 등)
+
+### 애니메이션
+
+`framer-motion`이 의존성으로 설치되어 있습니다.
