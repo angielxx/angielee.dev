@@ -55,9 +55,12 @@ export default function PostCard({ post }: PostCardProps) {
             </span>
           )}
 
-          {/* 카테고리 배지: 사이버 시안 네오브루탈 */}
-          <span className="inline-flex items-center text-xs font-bold bg-brand-accent text-black px-2.5 py-0.5 rounded-full w-fit">
-            {category}
+          {/* 카테고리 배지: 사이버 시안 네오브루탈 + ring pulse */}
+          <span className="relative inline-flex w-fit">
+            <span className="inline-flex items-center text-xs font-bold bg-brand-accent text-black px-2.5 py-0.5 rounded-full">
+              {category}
+            </span>
+            <span className="absolute inset-0 rounded-full border-2 border-[var(--ds-accent)] group-hover:animate-ring-pulse" />
           </span>
 
           {/* 제목 + 설명 */}

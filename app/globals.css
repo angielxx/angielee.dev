@@ -47,6 +47,14 @@
 @theme {
   /* 세미 네오브루탈 딱딱한 그림자 */
   --shadow-brand-brutal: 4px 4px 0px 0px #00F0FF;
+  /* 카테고리 배지 링 펄스 */
+  --animate-ring-pulse: ring-pulse 0.65s ease-out forwards;
+}
+
+@keyframes ring-pulse {
+  0%   { transform: scale(1);    opacity: 0; }
+  20%  { transform: scale(1.08); opacity: 0.7; }
+  100% { transform: scale(1.75); opacity: 0; }
 }
 
 /* ── 네오브루탈 디자인 시스템 CSS 변수 ─── */
