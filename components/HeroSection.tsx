@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import { AUTHOR_EMAIL } from "@/lib/site";
@@ -17,26 +18,72 @@ const item: Variants = {
 };
 
 export default function HeroSection() {
+  const glowRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    if (!glowRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    glowRef.current.style.background = `radial-gradient(500px circle at ${x}px ${y}px, var(--brand-500) 0%, transparent 70%)`;
+    glowRef.current.style.opacity = "1";
+  };
+
+  const handleMouseLeave = () => {
+    if (!glowRef.current) return;
+    glowRef.current.style.opacity = "0";
+  };
+
   return (
     <motion.section
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       variants={container}
       initial={false}
       animate="show"
       className="relative pt-28 pb-24 overflow-hidden"
     >
+      {/* ① 마우스 팔로우 ambient glow */}
+      <div
+        ref={glowRef}
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300"
+        style={{ opacity: 0 }}
+        aria-hidden
+      />
 
       <div className="max-w-6xl mx-auto px-4">
         <motion.h1
           variants={item}
           className="text-6xl sm:text-8xl font-extrabold text-[var(--fg)] leading-[1.05] tracking-tight mb-6"
         >
+          {/* ② 언더라인 draw-in — exploring */}
           <span className="block">
             Still{" "}
-            <span className="text-brand-600">exploring,</span>
+            <span className="relative inline-block text-brand-600">
+              exploring,
+              <motion.span
+                className="absolute left-0 h-[3px] w-full rounded-full bg-brand-600"
+                style={{ bottom: "0.05em", transformOrigin: "left" }}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.55, delay: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
+              />
+            </span>
           </span>
+
+          {/* ② 언더라인 draw-in — building */}
           <span className="block">
             Still{" "}
-            <span className="text-brand-600">building.</span>
+            <span className="relative inline-block text-brand-600">
+              building.
+              <motion.span
+                className="absolute left-0 h-[3px] w-full rounded-full bg-brand-600"
+                style={{ bottom: "0.05em", transformOrigin: "left" }}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.55, delay: 0.75, ease: [0.25, 0.1, 0.25, 1] }}
+              />
+            </span>
           </span>
         </motion.h1>
 
