@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import { AUTHOR_EMAIL } from "@/lib/site";
@@ -17,72 +16,83 @@ const item: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } },
 };
 
+interface UnderlineProps {
+  drawDelay: number;
+  shimmerDelay: number;
+}
+
+function AnimatedUnderline({ drawDelay, shimmerDelay }: UnderlineProps) {
+  return (
+    <>
+      {/* 글로우 레이어 — 블러 처리된 두꺼운 레이어 */}
+      <motion.span
+        className="absolute left-0 w-full rounded-full"
+        style={{
+          bottom: "0.04em",
+          height: "8px",
+          background: "var(--brand-500)",
+          filter: "blur(5px)",
+          opacity: 0.55,
+          transformOrigin: "left",
+        }}
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: 0.55, delay: drawDelay, ease: [0.25, 0.1, 0.25, 1] }}
+      />
+      {/* 크리스프 레이어 — 선명한 얇은 선 */}
+      <motion.span
+        className="absolute left-0 w-full rounded-full bg-brand-600"
+        style={{ bottom: "0.06em", height: "2.5px", transformOrigin: "left" }}
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: 0.55, delay: drawDelay, ease: [0.25, 0.1, 0.25, 1] }}
+      />
+      {/* 시머 레이어 — 흰빛이 좌→우로 흐름 */}
+      <motion.span
+        className="absolute rounded-full"
+        style={{
+          bottom: "0.06em",
+          left: 0,
+          width: "30%",
+          height: "2.5px",
+          background: "linear-gradient(to right, transparent, rgba(255,255,255,0.92), transparent)",
+        }}
+        initial={{ x: "-100%", opacity: 0 }}
+        animate={{ x: "350%", opacity: [0, 0.9, 0.9, 0] }}
+        transition={{
+          x: { duration: 0.75, delay: shimmerDelay, ease: "easeInOut" },
+          opacity: { duration: 0.75, delay: shimmerDelay, times: [0, 0.1, 0.75, 1] },
+        }}
+      />
+    </>
+  );
+}
+
 export default function HeroSection() {
-  const glowRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    if (!glowRef.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    glowRef.current.style.background = `radial-gradient(500px circle at ${x}px ${y}px, var(--brand-500) 0%, transparent 70%)`;
-    glowRef.current.style.opacity = "1";
-  };
-
-  const handleMouseLeave = () => {
-    if (!glowRef.current) return;
-    glowRef.current.style.opacity = "0";
-  };
-
   return (
     <motion.section
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       variants={container}
       initial={false}
       animate="show"
       className="relative pt-28 pb-24 overflow-hidden"
     >
-      {/* ① 마우스 팔로우 ambient glow */}
-      <div
-        ref={glowRef}
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300"
-        style={{ opacity: 0 }}
-        aria-hidden
-      />
-
       <div className="max-w-6xl mx-auto px-4">
         <motion.h1
           variants={item}
           className="text-6xl sm:text-8xl font-extrabold text-[var(--fg)] leading-[1.05] tracking-tight mb-6"
         >
-          {/* ② 언더라인 draw-in — exploring */}
           <span className="block">
             Still{" "}
             <span className="relative inline-block text-brand-600">
               exploring,
-              <motion.span
-                className="absolute left-0 h-[3px] w-full rounded-full bg-brand-600"
-                style={{ bottom: "0.05em", transformOrigin: "left" }}
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.55, delay: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
-              />
+              <AnimatedUnderline drawDelay={0.55} shimmerDelay={1.15} />
             </span>
           </span>
-
-          {/* ② 언더라인 draw-in — building */}
           <span className="block">
             Still{" "}
             <span className="relative inline-block text-brand-600">
               building.
-              <motion.span
-                className="absolute left-0 h-[3px] w-full rounded-full bg-brand-600"
-                style={{ bottom: "0.05em", transformOrigin: "left" }}
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.55, delay: 0.75, ease: [0.25, 0.1, 0.25, 1] }}
-              />
+              <AnimatedUnderline drawDelay={0.75} shimmerDelay={1.35} />
             </span>
           </span>
         </motion.h1>

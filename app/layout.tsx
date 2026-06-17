@@ -3,6 +3,7 @@ import { Fira_Code } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import AmbientGlow from "@/components/AmbientGlow";
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, AUTHOR_NAME, AUTHOR_GITHUB } from "@/lib/site";
 
 const firaCode = Fira_Code({
@@ -75,6 +76,7 @@ export default function RootLayout({
       <body
         className={`${firaCode.variable} antialiased`}
       >
+        <AmbientGlow />
         <Header />
         <main className="min-h-screen">{children}</main>
         <Footer />
