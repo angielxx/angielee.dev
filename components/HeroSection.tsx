@@ -28,16 +28,23 @@ export default function HeroSection() {
       <div className="max-w-6xl mx-auto px-4">
         <motion.h1
           variants={item}
-          className="text-5xl sm:text-7xl font-bold text-[var(--fg)] leading-tight mb-4"
+          className="text-6xl sm:text-8xl font-extrabold text-[var(--fg)] leading-[1.05] tracking-tight mb-6"
         >
-          Angie Lee
+          <span className="block">
+            Still{" "}
+            <span className="text-brand-600">exploring,</span>
+          </span>
+          <span className="block">
+            Still{" "}
+            <span className="text-brand-600">building.</span>
+          </span>
         </motion.h1>
 
         <motion.h2
           variants={item}
-          className="text-3xl sm:text-5xl font-bold text-[var(--fg)] opacity-70 mb-8"
+          className="text-base sm:text-lg font-medium text-[var(--muted)] mb-6 tracking-widest uppercase"
         >
-          Frontend Engineer
+          Angie Lee · Frontend Engineer
         </motion.h2>
 
         <motion.p
