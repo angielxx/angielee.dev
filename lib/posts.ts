@@ -16,6 +16,7 @@ export interface PostMeta {
   series?: string;
   seriesOrder?: number;
   readingTime: number;
+  featured?: boolean;
 }
 
 export interface Post extends PostMeta {
@@ -65,6 +66,7 @@ export function getPostBySlug(slug: string): Post {
     series: data.series,
     seriesOrder: data.seriesOrder,
     readingTime: calcReadingTime(content),
+    featured: data.featured ?? false,
   };
 }
 
@@ -72,6 +74,10 @@ export function getAllPosts(): Post[] {
   return getAllSlugs()
     .map(getPostBySlug)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+export function getFeaturedPosts(): Post[] {
+  return getAllPosts().filter((p) => p.featured);
 }
 
 export function getPostsByCategory(category: Category): Post[] {
