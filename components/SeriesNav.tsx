@@ -5,9 +5,10 @@ interface SeriesNavProps {
   currentSlug: string;
   seriesName: string;
   posts: Post[];
+  lang?: string;
 }
 
-export default function SeriesNav({ currentSlug, seriesName, posts }: SeriesNavProps) {
+export default function SeriesNav({ currentSlug, seriesName, posts, lang = "ko" }: SeriesNavProps) {
   const currentIndex = posts.findIndex((p) => p.slug === currentSlug);
   const total = posts.length;
   const current = currentIndex + 1;
@@ -36,7 +37,7 @@ export default function SeriesNav({ currentSlug, seriesName, posts }: SeriesNavP
                 </div>
               ) : (
                 <Link
-                  href={`/blog/${post.slug}`}
+                  href={`/${lang}/blog/${post.slug}`}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--border)] transition-colors group"
                 >
                   <span className="w-4 h-4 flex items-center justify-center shrink-0 text-xs text-[var(--muted)] font-medium">

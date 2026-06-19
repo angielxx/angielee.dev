@@ -8,19 +8,21 @@ import TagBadge from "./TagBadge";
 
 interface PostCardProps {
   post: Post;
+  lang: string;
 }
 
-export default function PostCard({ post }: PostCardProps) {
+export default function PostCard({ post, lang }: PostCardProps) {
   const {
     slug, title, date, description, category,
     tags, thumbnail, series, seriesOrder, readingTime,
   } = post;
 
-  const formattedDate = new Date(date).toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedDate = new Date(date).toLocaleDateString(
+    lang === "ko" ? "ko-KR" : "en-US",
+    { year: "numeric", month: "long", day: "numeric" }
+  );
+
+  const readingTimeLabel = lang === "ko" ? "분 읽기" : "min read";
 
   return (
     <motion.article
@@ -32,7 +34,7 @@ export default function PostCard({ post }: PostCardProps) {
       className="rounded-xl border border-[var(--border)] bg-[var(--ds-surface)] overflow-hidden group
                  hover:[box-shadow:4px_4px_0px_0px_var(--ds-accent)] transition-[transform] duration-200"
     >
-      <Link href={`/blog/${slug}`} className="block h-full">
+      <Link href={`/${lang}/blog/${slug}`} className="block h-full">
         {/* 썸네일 */}
         {thumbnail && (
           <div className="relative aspect-video overflow-hidden">
@@ -75,14 +77,14 @@ export default function PostCard({ post }: PostCardProps) {
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <TagBadge key={tag} tag={tag} />
+                <TagBadge key={tag} tag={tag} lang={lang} />
               ))}
             </div>
           )}
 
           {/* 메타 정보 */}
           <div className="flex items-center gap-2 text-xs text-brand-text-sub">
-            <span>{readingTime}분 읽기</span>
+            <span>{readingTime}{readingTimeLabel}</span>
             <span>·</span>
             <time dateTime={date}>{formattedDate}</time>
           </div>

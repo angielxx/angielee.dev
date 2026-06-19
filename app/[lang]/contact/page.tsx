@@ -1,24 +1,45 @@
 import type { Metadata } from "next";
 import { AUTHOR_EMAIL, AUTHOR_GITHUB } from "@/lib/site";
+import type { Lang } from "@/lib/i18n";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description: "angielee에게 연락하기",
-};
+interface Props {
+  params: Promise<{ lang: Lang }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { lang } = await params;
+  return {
+    title: "Contact",
+    description:
+      lang === "ko" ? "angielee에게 연락하기" : "Get in touch with angielee",
+  };
+}
 
 const LINKS = [
   {
     label: "이메일",
+    labelEn: "Email",
     value: AUTHOR_EMAIL,
     href: `mailto:${AUTHOR_EMAIL}`,
     icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+        />
       </svg>
     ),
   },
   {
     label: "GitHub",
+    labelEn: "GitHub",
     value: AUTHOR_GITHUB.replace("https://", ""),
     href: AUTHOR_GITHUB,
     icon: (
@@ -29,16 +50,21 @@ const LINKS = [
   },
 ];
 
-export default function ContactPage() {
+export default async function ContactPage({ params }: Props) {
+  const { lang } = await params;
+  const isKo = lang === "ko";
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-16">
       <h1 className="text-3xl font-bold text-[var(--fg)] mb-4">Contact</h1>
       <p className="text-[var(--muted)] mb-12 leading-relaxed">
-        피드백이나 협업 제안 등 언제든 편하게 연락주세요.
+        {isKo
+          ? "피드백이나 협업 제안 등 언제든 편하게 연락주세요."
+          : "Feel free to reach out anytime for feedback, collaboration proposals, or anything else."}
       </p>
 
       <div className="flex flex-col gap-4">
-        {LINKS.map(({ label, value, href, icon }) => (
+        {LINKS.map(({ label, labelEn, value, href, icon }) => (
           <a
             key={label}
             href={href}
@@ -50,16 +76,25 @@ export default function ContactPage() {
               {icon}
             </span>
             <div>
-              <p className="text-xs text-[var(--muted)] mb-0.5">{label}</p>
+              <p className="text-xs text-[var(--muted)] mb-0.5">
+                {isKo ? label : labelEn}
+              </p>
               <p className="text-sm font-medium text-[var(--fg)] group-hover:text-brand-600 transition-colors">
                 {value}
               </p>
             </div>
             <svg
               className="w-4 h-4 text-[var(--muted)] ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M17 8l4 4m0 0l-4 4m4-4H3"
+              />
             </svg>
           </a>
         ))}

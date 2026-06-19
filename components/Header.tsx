@@ -5,19 +5,32 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CATEGORY_GROUPS } from "@/lib/categories";
+import { getLangFromPathname, type Lang } from "@/lib/i18n";
 import ThemeToggle from "@/components/ThemeToggle";
-
-const NAV_LINKS = [
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
-];
 
 export default function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const lang: Lang = getLangFromPathname(pathname);
+  const otherLang: Lang = lang === "ko" ? "en" : "ko";
+
+  // Replace the leading lang segment to build the other-lang URL
+  const otherLangPath = (() => {
+    const segs = pathname.split("/");
+    segs[1] = otherLang;
+    return segs.join("/") || `/${otherLang}`;
+  })();
+
+  const isActive = (href: string) => pathname.startsWith(href);
+
+  const blogLabel = lang === "ko" ? "블로그" : "Blog";
+  const allPostsLabel = lang === "ko" ? "전체 글" : "All Posts";
+
+  const NAV_LINKS = [
+    { href: `/${lang}/about`, label: "About" },
+    { href: `/${lang}/contact`, label: "Contact" },
+  ];
 
   return (
     <motion.header
@@ -29,7 +42,7 @@ export default function Header() {
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* 워드마크 */}
         <Link
-          href="/"
+          href={`/${lang}`}
           className="text-base font-bold tracking-tight shrink-0 logo-shimmer transition-all duration-300 text-brand-text-main"
         >
           Angie<span className="text-brand-accent">.Lee</span>
@@ -42,12 +55,12 @@ export default function Header() {
             <button
               className={[
                 "flex items-center gap-1 py-1 transition-colors",
-                isActive("/blog")
+                isActive(`/${lang}/blog`)
                   ? "text-brand-accent font-medium"
                   : "text-brand-text-sub hover:text-brand-text-main",
               ].join(" ")}
             >
-              블로그
+              {blogLabel}
               <svg
                 className="w-3 h-3 transition-transform group-hover:rotate-180"
                 fill="none"
@@ -63,10 +76,10 @@ export default function Header() {
             <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">
               <div className="bg-brand-surface border border-white/10 rounded-xl shadow-lg p-2 min-w-[140px]">
                 <Link
-                  href="/blog"
+                  href={`/${lang}/blog`}
                   className="block px-3 py-1.5 rounded-lg text-sm text-brand-text-sub hover:bg-[var(--fg)]/5 hover:text-brand-text-main transition-colors"
                 >
-                  전체 글
+                  {allPostsLabel}
                 </Link>
                 <div className="my-1 border-t border-white/10" />
                 {Object.entries(CATEGORY_GROUPS).map(([group, categories]) => (
@@ -77,7 +90,7 @@ export default function Header() {
                     {categories.map((cat) => (
                       <Link
                         key={cat}
-                        href={`/blog?category=${encodeURIComponent(cat)}`}
+                        href={`/${lang}/blog?category=${encodeURIComponent(cat)}`}
                         className="block px-3 py-1.5 rounded-lg text-sm text-brand-text-main opacity-80 hover:bg-[var(--fg)]/5 hover:opacity-100 hover:text-brand-accent transition-colors"
                       >
                         {cat}
@@ -109,11 +122,26 @@ export default function Header() {
               />
             </Link>
           ))}
+
+          {/* 언어 토글 */}
+          <Link
+            href={otherLangPath}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-[var(--border)] text-xs font-bold text-brand-text-sub hover:text-brand-accent hover:border-brand-accent transition-colors"
+          >
+            {otherLang.toUpperCase()}
+          </Link>
+
           <ThemeToggle />
         </nav>
 
-        {/* 모바일: 테마 토글 + 햄버거 버튼 */}
+        {/* 모바일: 언어 토글 + 테마 토글 + 햄버거 버튼 */}
         <div className="lg:hidden flex items-center gap-1">
+          <Link
+            href={otherLangPath}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-[var(--border)] text-xs font-bold text-brand-text-sub hover:text-brand-accent hover:border-brand-accent transition-colors"
+          >
+            {otherLang.toUpperCase()}
+          </Link>
           <ThemeToggle />
           <button
             onClick={() => setMenuOpen((v) => !v)}
@@ -143,11 +171,11 @@ export default function Header() {
           >
             <nav className="px-4 py-4 flex flex-col gap-1 text-sm">
               <Link
-                href="/blog"
+                href={`/${lang}/blog`}
                 onClick={() => setMenuOpen(false)}
                 className="px-3 py-2.5 rounded-lg text-brand-text-sub hover:bg-[var(--fg)]/5 hover:text-brand-text-main transition-colors"
               >
-                전체 글
+                {allPostsLabel}
               </Link>
 
               {Object.entries(CATEGORY_GROUPS).map(([group, categories]) => (
@@ -158,7 +186,7 @@ export default function Header() {
                   {categories.map((cat) => (
                     <Link
                       key={cat}
-                      href={`/blog?category=${encodeURIComponent(cat)}`}
+                      href={`/${lang}/blog?category=${encodeURIComponent(cat)}`}
                       onClick={() => setMenuOpen(false)}
                       className="block px-3 py-2.5 rounded-lg text-brand-text-main opacity-80 hover:bg-[var(--fg)]/5 hover:opacity-100 hover:text-brand-accent transition-colors"
                     >

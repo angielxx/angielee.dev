@@ -4,6 +4,7 @@ import matter from "gray-matter";
 export type { Category } from "@/lib/categories";
 export { CATEGORIES, CATEGORY_GROUPS } from "@/lib/categories";
 import type { Category } from "@/lib/categories";
+import type { Lang } from "@/lib/i18n";
 
 export interface PostMeta {
   slug: string;
@@ -25,7 +26,7 @@ export interface Post extends PostMeta {
 
 // ── 상수 ─────────────────────────────────────────
 
-const POSTS_DIR = path.join(process.cwd(), "posts");
+const getPostsDir = (lang: Lang) => path.join(process.cwd(), "posts", lang);
 const KO_CHARS_PER_MIN = 500;
 
 // ── 유틸 ─────────────────────────────────────────
@@ -41,16 +42,18 @@ export function calcReadingTime(content: string): number {
 
 // ── 조회 함수 ─────────────────────────────────────
 
-export function getAllSlugs(): string[] {
-  if (!fs.existsSync(POSTS_DIR)) return [];
+export function getAllSlugs(lang: Lang): string[] {
+  const dir = getPostsDir(lang);
+  if (!fs.existsSync(dir)) return [];
   return fs
-    .readdirSync(POSTS_DIR)
+    .readdirSync(dir)
     .filter((f) => f.endsWith(".mdx"))
     .map((f) => f.replace(/\.mdx$/, ""));
 }
 
-export function getPostBySlug(slug: string): Post {
-  const filePath = path.join(POSTS_DIR, `${slug}.mdx`);
+export function getPostBySlug(slug: string, lang: Lang): Post {
+  const dir = getPostsDir(lang);
+  const filePath = path.join(dir, `${slug}.mdx`);
   const raw = fs.readFileSync(filePath, "utf-8");
   const { data, content } = matter(raw);
 
@@ -70,31 +73,31 @@ export function getPostBySlug(slug: string): Post {
   };
 }
 
-export function getAllPosts(): Post[] {
-  return getAllSlugs()
-    .map(getPostBySlug)
+export function getAllPosts(lang: Lang): Post[] {
+  return getAllSlugs(lang)
+    .map((slug) => getPostBySlug(slug, lang))
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
-export function getFeaturedPosts(): Post[] {
-  return getAllPosts().filter((p) => p.featured);
+export function getFeaturedPosts(lang: Lang): Post[] {
+  return getAllPosts(lang).filter((p) => p.featured);
 }
 
-export function getPostsByCategory(category: Category): Post[] {
-  return getAllPosts().filter((p) => p.category === category);
+export function getPostsByCategory(category: Category, lang: Lang): Post[] {
+  return getAllPosts(lang).filter((p) => p.category === category);
 }
 
-export function getPostsByTag(tag: string): Post[] {
-  return getAllPosts().filter((p) => p.tags.includes(tag));
+export function getPostsByTag(tag: string, lang: Lang): Post[] {
+  return getAllPosts(lang).filter((p) => p.tags.includes(tag));
 }
 
-export function getSeriesPosts(seriesName: string): Post[] {
-  return getAllPosts()
+export function getSeriesPosts(seriesName: string, lang: Lang): Post[] {
+  return getAllPosts(lang)
     .filter((p) => p.series === seriesName)
     .sort((a, b) => (a.seriesOrder ?? 0) - (b.seriesOrder ?? 0));
 }
 
-export function getAllTags(): string[] {
-  const tags = getAllPosts().flatMap((p) => p.tags);
+export function getAllTags(lang: Lang): string[] {
+  const tags = getAllPosts(lang).flatMap((p) => p.tags);
   return [...new Set(tags)].sort();
 }

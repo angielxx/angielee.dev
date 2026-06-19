@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import { getAllSlugs, getPostBySlug, getSeriesPosts } from "@/lib/posts";
+import { SUPPORTED_LANGS, type Lang } from "@/lib/i18n";
 import { SITE_URL, AUTHOR_NAME } from "@/lib/site";
 import { extractToc } from "@/lib/toc";
 import TagBadge from "@/components/TagBadge";
@@ -14,29 +15,31 @@ import CodeBlock from "@/components/CodeBlock";
 import ViewTracker from "@/components/ViewTracker";
 
 interface Props {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ lang: Lang; slug: string }>;
 }
 
 export function generateStaticParams() {
-  return getAllSlugs().map((slug) => ({ slug }));
+  return SUPPORTED_LANGS.flatMap((lang) =>
+    getAllSlugs(lang).map((slug) => ({ lang, slug }))
+  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { lang, slug } = await params;
   try {
-    const post = getPostBySlug(slug);
+    const post = getPostBySlug(slug, lang);
     return {
       title: post.title,
       description: post.description,
       alternates: {
-        canonical: `${SITE_URL}/blog/${slug}`,
+        canonical: `${SITE_URL}/${lang}/blog/${slug}`,
       },
       openGraph: {
         title: post.title,
         description: post.description,
         type: "article",
         publishedTime: post.date,
-        url: `${SITE_URL}/blog/${slug}`,
+        url: `${SITE_URL}/${lang}/blog/${slug}`,
         ...(post.thumbnail && { images: [{ url: post.thumbnail }] }),
       },
     };
@@ -59,37 +62,39 @@ const mdxOptions = {
 };
 
 export default async function BlogPostPage({ params }: Props) {
-  const { slug } = await params;
+  const { lang, slug } = await params;
 
   let post;
   try {
-    post = getPostBySlug(slug);
+    post = getPostBySlug(slug, lang);
   } catch {
     notFound();
   }
 
   const toc = extractToc(post.content);
-  const seriesPosts = post.series ? getSeriesPosts(post.series) : [];
+  const seriesPosts = post.series ? getSeriesPosts(post.series, lang) : [];
 
-  const formattedDate = new Date(post.date).toLocaleDateString("ko-KR", {
+  const locale = lang === "ko" ? "ko-KR" : "en-US";
+  const formattedDate = new Date(post.date).toLocaleDateString(locale, {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+  const readingTimeLabel = lang === "ko" ? "분 읽기" : "min read";
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
     description: post.description,
-    url: `${SITE_URL}/blog/${post.slug}`,
+    url: `${SITE_URL}/${lang}/blog/${post.slug}`,
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `${SITE_URL}/blog/${post.slug}`,
+      "@id": `${SITE_URL}/${lang}/blog/${post.slug}`,
     },
     datePublished: post.date,
     dateModified: post.date,
-    inLanguage: "ko",
+    inLanguage: lang === "ko" ? "ko" : "en",
     author: {
       "@type": "Person",
       "@id": `${SITE_URL}/#person`,
@@ -117,7 +122,9 @@ export default async function BlogPostPage({ params }: Props) {
           {post.series && (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 bg-brand-50 border border-brand-200 rounded-full px-2.5 py-0.5 mb-4">
               {post.series}
-              {post.seriesOrder && <span className="opacity-70">#{post.seriesOrder}</span>}
+              {post.seriesOrder && (
+                <span className="opacity-70">#{post.seriesOrder}</span>
+              )}
             </span>
           )}
 
@@ -130,7 +137,10 @@ export default async function BlogPostPage({ params }: Props) {
           <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)] mb-4">
             <span className="font-medium text-brand-600">{post.category}</span>
             <span>·</span>
-            <span>{post.readingTime}분 읽기</span>
+            <span>
+              {post.readingTime}
+              {readingTimeLabel}
+            </span>
             <span>·</span>
             <time dateTime={post.date}>{formattedDate}</time>
           </div>
@@ -138,7 +148,7 @@ export default async function BlogPostPage({ params }: Props) {
           {post.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {post.tags.map((tag) => (
-                <TagBadge key={tag} tag={tag} clickable />
+                <TagBadge key={tag} tag={tag} clickable lang={lang} />
               ))}
             </div>
           )}
@@ -151,6 +161,7 @@ export default async function BlogPostPage({ params }: Props) {
               currentSlug={post.slug}
               seriesName={post.series}
               posts={seriesPosts}
+              lang={lang}
             />
           </div>
         )}

@@ -8,9 +8,15 @@ interface CategoryFilterProps {
   categories: Category[];
   activeCategory?: string;
   activeTag?: string;
+  lang: string;
 }
 
-export default function CategoryFilter({ categories, activeCategory, activeTag }: CategoryFilterProps) {
+export default function CategoryFilter({
+  categories,
+  activeCategory,
+  activeTag,
+  lang,
+}: CategoryFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -21,11 +27,11 @@ export default function CategoryFilter({ categories, activeCategory, activeTag }
     } else {
       params.delete("category");
     }
-    // 카테고리 변경 시 태그 필터 유지
-    router.push(`/blog?${params.toString()}`);
+    router.push(`/${lang}/blog?${params.toString()}`);
   };
 
   const allActive = !activeCategory && !activeTag;
+  const allLabel = lang === "ko" ? "전체" : "All";
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -40,7 +46,7 @@ export default function CategoryFilter({ categories, activeCategory, activeTag }
             : "border border-[var(--border)] text-[var(--muted)] hover:border-brand-500 hover:text-brand-600",
         ].join(" ")}
       >
-        전체
+        {allLabel}
       </motion.button>
 
       {categories.map((cat) => {
