@@ -24,7 +24,7 @@ export default async function Home({ params }: Props) {
 
   const t =
     lang === "ko"
-      ? { popular: hasViewData ? "인기 글" : "Featured", latest: "최신 글", viewAll: "전체 보기" }
+      ? { popular: hasViewData ? "인기 글" : "추천 글", latest: "최신 글", viewAll: "전체 보기" }
       : { popular: hasViewData ? "Popular" : "Featured", latest: "Latest", viewAll: "View All" };
 
   return (
