@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: "Contact",
     description:
-      lang === "ko" ? "angielee에게 연락하기" : "Get in touch with angielee",
+      lang === "ko" ? "이은지에게 연락하기" : "Get in touch with Angie Lee",
   };
 }
 

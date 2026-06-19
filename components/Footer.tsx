@@ -14,7 +14,7 @@ export default function Footer() {
           </Link>
 
           <p className="text-xs text-[var(--muted)]">
-            프론트엔드 개발자 Angie Lee(이은지)의 블로그
+            프론트엔드 개발자 이은지의 블로그
           </p>
 
           {/* 소셜 링크 */}
@@ -42,7 +42,7 @@ export default function Footer() {
           </div>
 
           <p className="text-xs text-[var(--muted)]">
-            © {year} Angie Lee
+            © {year} 이은지
           </p>
         </div>
       </div>

@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, type Variants } from "framer-motion";
 import { AUTHOR_EMAIL } from "@/lib/site";
+import { getLangFromPathname } from "@/lib/i18n";
 
 const container: Variants = {
   hidden: {},
@@ -69,6 +71,10 @@ function AnimatedUnderline({ drawDelay, shimmerDelay }: UnderlineProps) {
 }
 
 export default function HeroSection() {
+  const pathname = usePathname();
+  const lang = getLangFromPathname(pathname);
+  const isKo = lang === "ko";
+
   return (
     <motion.section
       variants={container}
@@ -101,15 +107,16 @@ export default function HeroSection() {
           variants={item}
           className="text-base sm:text-lg font-medium text-[var(--muted)] mb-6 tracking-widest uppercase"
         >
-          Angie Lee · Frontend Engineer
+          {isKo ? "이은지" : "Angie Lee"} · Frontend Engineer
         </motion.h2>
 
         <motion.p
           variants={item}
           className="text-lg text-[var(--muted)] max-w-xl leading-relaxed mb-4"
         >
-          더 나은 코드, 더 나은 경험, 더 나은 사람을 향해 나아가는 이야기를 씁니다.
-          프론트엔드 개발과 일상의 기록을 담은 공간입니다.
+          {isKo
+            ? "더 나은 코드, 더 나은 경험, 더 나은 사람을 향해 나아가는 이야기를 씁니다. 프론트엔드 개발과 일상의 기록을 담은 공간입니다."
+            : "Stories of growing toward better code, better experiences, and a better self. A space documenting frontend development and everyday life."}
         </motion.p>
 
         <motion.p
@@ -121,19 +128,19 @@ export default function HeroSection() {
 
         <motion.div variants={item} className="flex flex-wrap gap-3">
           <Link
-            href="/blog"
+            href={`/${lang}/blog`}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors"
           >
-            글 읽기
+            {isKo ? "글 읽기" : "Read Posts"}
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
           </Link>
           <Link
-            href="/about"
+            href={`/${lang}/about`}
             className="inline-flex items-center px-5 py-2.5 rounded-full border border-[var(--border)] text-sm font-medium text-[var(--muted)] hover:border-brand-500 hover:text-brand-600 transition-colors"
           >
-            소개
+            {isKo ? "소개" : "About"}
           </Link>
         </motion.div>
       </div>

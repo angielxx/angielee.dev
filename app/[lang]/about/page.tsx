@@ -11,8 +11,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: "About",
     description:
       lang === "ko"
-        ? "프론트엔드 개발자 angielee 소개"
-        : "About frontend developer angielee",
+        ? "프론트엔드 개발자 이은지 소개"
+        : "About frontend developer Angie Lee",
   };
 }
 
@@ -54,7 +54,7 @@ export default async function AboutPage({ params }: Props) {
           <>
             <p className="text-[var(--muted)] leading-relaxed text-base mb-4">
               안녕하세요, 프론트엔드 개발자{" "}
-              <span className="font-medium text-[var(--fg)]">angielee</span>입니다.
+              <span className="font-medium text-[var(--fg)]">이은지</span>입니다.
             </p>
             <p className="text-[var(--muted)] leading-relaxed text-base mb-4">
               영상 디자인과 모션 그래픽 경험을 바탕으로, 움직임이 살아있는 UI를 만드는 것을
@@ -69,7 +69,7 @@ export default async function AboutPage({ params }: Props) {
           <>
             <p className="text-[var(--muted)] leading-relaxed text-base mb-4">
               Hi, I&apos;m{" "}
-              <span className="font-medium text-[var(--fg)]">angielee</span>, a frontend developer.
+              <span className="font-medium text-[var(--fg)]">Angie Lee</span>, a frontend developer.
             </p>
             <p className="text-[var(--muted)] leading-relaxed text-base mb-4">
               Drawing on a background in video design and motion graphics, I love building UIs that

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { Post } from "@/lib/posts";
+import { getCategoryLabel } from "@/lib/categories";
 import TagBadge from "./TagBadge";
 
 interface PostCardProps {
@@ -60,7 +61,7 @@ export default function PostCard({ post, lang }: PostCardProps) {
           {/* 카테고리 배지: 사이버 시안 네오브루탈 + ring pulse */}
           <span className="relative inline-flex w-fit">
             <span className="inline-flex items-center text-xs font-bold bg-brand-accent text-black px-2.5 py-0.5 rounded-full">
-              {category}
+              {getCategoryLabel(category, lang)}
             </span>
             <span className="absolute inset-0 rounded-full border-2 border-[var(--ds-accent)] group-hover:animate-ring-pulse" />
           </span>

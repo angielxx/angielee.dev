@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getAllPosts } from "@/lib/posts";
-import { CATEGORIES } from "@/lib/categories";
+import { CATEGORIES, getCategoryLabel, type Category } from "@/lib/categories";
 import PostCard from "@/components/PostCard";
 import CategoryFilter from "@/components/CategoryFilter";
 import { SITE_URL } from "@/lib/site";
@@ -53,7 +53,7 @@ export default async function BlogPage({ params, searchParams }: Props) {
   const heading = tag
     ? `#${tag}`
     : category
-    ? category
+    ? getCategoryLabel(category as Category, lang)
     : lang === "ko"
     ? "전체 글"
     : "All Posts";

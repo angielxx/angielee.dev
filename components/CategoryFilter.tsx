@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import type { Category } from "@/lib/categories";
+import { getCategoryLabel, type Category } from "@/lib/categories";
 
 interface CategoryFilterProps {
   categories: Category[];
@@ -63,7 +63,7 @@ export default function CategoryFilter({
                 : "border border-[var(--border)] text-[var(--muted)] hover:border-brand-500 hover:text-brand-600",
             ].join(" ")}
           >
-            {cat}
+            {getCategoryLabel(cat, lang)}
           </motion.button>
         );
       })}
