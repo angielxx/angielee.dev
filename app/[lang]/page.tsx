@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getAllPosts, getPostBySlug } from "@/lib/posts";
+import { getAllPosts, getPostBySlug, getFeaturedPosts } from "@/lib/posts";
 import { getTopSlugs } from "@/lib/redis";
 import HeroSection from "@/components/HeroSection";
 import PostCard from "@/components/PostCard";
@@ -14,15 +14,11 @@ interface Props {
 export default async function Home({ params }: Props) {
   const { lang } = await params;
   const topSlugs = await getTopSlugs(3);
-  const featuredPosts = topSlugs
-    .map((slug) => {
-      try {
-        return getPostBySlug(slug, lang);
-      } catch {
-        return null;
-      }
-    })
-    .filter((p) => p !== null);
+  const featuredPosts = topSlugs.length > 0
+    ? topSlugs
+        .map((slug) => { try { return getPostBySlug(slug, lang); } catch { return null; } })
+        .filter((p) => p !== null)
+    : getFeaturedPosts(lang);
   const latestPosts = getAllPosts(lang).slice(0, 3);
 
   const t =
