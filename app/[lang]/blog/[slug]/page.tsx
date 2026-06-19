@@ -11,6 +11,8 @@ import { extractToc } from "@/lib/toc";
 import TagBadge from "@/components/TagBadge";
 import SeriesNav from "@/components/SeriesNav";
 import TOC from "@/components/TOC";
+import PostStickyHeader from "@/components/PostStickyHeader";
+import Comments from "@/components/Comments";
 import CodeBlock from "@/components/CodeBlock";
 import ViewTracker from "@/components/ViewTracker";
 
@@ -116,6 +118,14 @@ export default async function BlogPostPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
+      <PostStickyHeader
+        title={post.title}
+        category={post.category}
+        readingTime={post.readingTime}
+        readingTimeLabel={readingTimeLabel}
+        toc={toc}
+      />
+
       <div className="max-w-6xl mx-auto px-4 py-12">
         {/* 포스트 헤더 */}
         <header className="mb-10 max-w-3xl">
@@ -152,6 +162,9 @@ export default async function BlogPostPage({ params }: Props) {
               ))}
             </div>
           )}
+
+          {/* 이 div가 뷰포트 밖으로 나가면 컴팩트 헤더가 표시됨 */}
+          <div id="post-header-sentinel" />
         </header>
 
         {/* 시리즈 네비게이션 */}
@@ -167,16 +180,19 @@ export default async function BlogPostPage({ params }: Props) {
         )}
 
         {/* 콘텐츠 + TOC 그리드 */}
-        <div className="lg:grid lg:grid-cols-[1fr_240px] lg:gap-12 lg:items-start">
-          {/* MDX 본문 */}
-          <article className="prose prose-neutral dark:prose-invert max-w-none min-w-0">
-            <MDXRemote source={post.content} {...mdxOptions} />
-          </article>
+        <div className="lg:grid lg:grid-cols-[1fr_240px] lg:gap-12">
+          {/* MDX 본문 + 댓글 */}
+          <div className="min-w-0 lg:self-start">
+            <article className="prose prose-neutral dark:prose-invert max-w-none">
+              <MDXRemote source={post.content} {...mdxOptions} />
+            </article>
+            <Comments lang={lang} slug={slug} />
+          </div>
 
           {/* TOC 사이드바 (lg 이상) */}
           {toc.length > 0 && (
             <aside className="hidden lg:block">
-              <div className="sticky top-24">
+              <div className="sticky top-[7.5rem]">
                 <TOC items={toc} />
               </div>
             </aside>
