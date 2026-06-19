@@ -21,7 +21,6 @@ export default function Header() {
   const allPostsLabel = lang === "ko" ? "전체 글" : "All Posts";
 
   const NAV_LINKS = [
-    { href: `/${lang}/about`, label: "About" },
     { href: `/${lang}/contact`, label: "Contact" },
   ];
 

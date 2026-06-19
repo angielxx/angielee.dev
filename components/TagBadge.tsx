@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTagLabel } from "@/lib/tags";
 
 interface TagBadgeProps {
   tag: string;
@@ -9,14 +10,15 @@ interface TagBadgeProps {
 export default function TagBadge({ tag, clickable = false, lang = "ko" }: TagBadgeProps) {
   const className =
     "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--tag-bg)] text-[var(--tag-text)] border border-brand-200 transition-transform hover:scale-105";
+  const label = getTagLabel(tag, lang);
 
   if (clickable) {
     return (
       <Link href={`/${lang}/blog?tag=${encodeURIComponent(tag)}`} className={className}>
-        {tag}
+        {label}
       </Link>
     );
   }
 
-  return <span className={className}>{tag}</span>;
+  return <span className={className}>{label}</span>;
 }
