@@ -1,0 +1,121 @@
+---
+title: "2025 Woowacon Conference Recap"
+description: "A recap of my first-ever tech conference — Woowacon 2025 — including highlights from the sessions that left the biggest impression on me."
+date: "2025-11-09"
+category: "일상"
+tags: ["컨퍼런스"]
+---
+
+A fresh, still-warm recap of attending Woowacon 2025.
+
+
+## Getting Into a Tech Conference for the First Time in My Life
+
+Karrot (당근), Woowa Brothers, Toss — whenever applications opened for tech conferences like these, I always signed up without a second thought. But I had never once been selected.
+
+I figured this time would be no different. Woowacon — surely I wouldn't get in. I clicked into the results page without much expectation, and the screen looked... different than usual.
+
+![](/images/tistory/woowacon-2025/c3a97337bca0.png)
+
+I was absolutely thrilled to be selected for the first time ever.  
+The fact that I didn't have to go into the office that day may have added to the excitement — not that I'd admit that publicly.
+
+
+## At the Woowacon 2025 Venue
+
+![](/images/tistory/woowacon-2025/9f4e3171579f.jpg)
+![](/images/tistory/woowacon-2025/909f2064c693.jpg)
+
+I took a long escalator straight up to the 5th floor of Parnas Seoul. The escalator was very tall and open on the sides, so I was too scared to stand on the right and pressed myself as far left as I could on the way up...
+
+![](/images/tistory/woowacon-2025/95e5a9a79d8f.jpg)
+![](/images/tistory/woowacon-2025/8fd0845db53f.jpg)
+
+A QR code sent via text message was scanned at the entrance and a name badge printed on the spot. I also received a simple welcome kit — the official 2025 Woowacon t-shirt! It was an XL, which was a bit of a problem, but honestly oversized looks fine.
+
+I had been hoping for more event merchandise, so I was slightly let down by how modest the swag was — not that I'd say that out loud...
+
+![](/images/tistory/woowacon-2025/4503ad29d63f.jpg)
+![](/images/tistory/woowacon-2025/dcc68313705e.jpg)
+![](/images/tistory/woowacon-2025/5dcc87865c7a.jpg)
+
+There were also some activity booths. One was labeled "Sweet Station," but the coffee and cookies had clearly been cleaned out before I got there — not even crumbs in sight.
+
+I did play a mini-game while waiting for a session, which was fun enough. I came in around 160th place or so. The game itself was simple, but scoring high was surprisingly tricky.
+
+There was also a photo booth called "Woowanecutt" that I meant to visit after lunch, but I completely forgot about it...
+
+![](/images/tistory/woowacon-2025/15e10d3fe15e.jpg)
+
+There was a balance game activity too, with questions like:
+
+1. If only one mode could exist in the world — dark mode or light mode?
+2. If you had to choose a code review partner for life — a colleague who only clicks "Like" vs. one who calls out every typo?
+3. Starving and only two options — soggy fried chicken vs. sweet and sour pork with no sauce?
+4. On a two-week trip, which would you rather put up with — failing to get a single great photo the entire trip vs. not finding a single great meal?
+
+
+## Sessions That Left a Strong Impression
+
+![](/images/tistory/woowacon-2025/c8060c28aaf1.jpg)
+
+I only managed to attend two sessions (unfortunately), but both left a strong impression on me.
+
+
+#### 1) Protecting Data-Driven Business with Log Regression Testing
+
+![](/images/tistory/woowacon-2025/717fc133ad8e.jpg)
+
+**Session Summary**
+1. Collecting log data reliably is critical for data-driven decision making.
+2. A logging bug in production went undetected for two months, surfacing only after that long. This made the team realize the need for regression testing on logging logic.
+3. They built log regression testing using API mocking, and implemented snapshot tests against API payloads to track side effects.
+4. Integrating log regression tests into CI allowed them to catch side effects in logging logic through the actual CI pipeline.
+
+**My Takeaways**
+
+The company I currently work at doesn't really collect structured logs, so it was fascinating to get a glimpse into how an organization that is serious about data-driven decisions actually builds and manages that data. The fact that Woowa Brothers operates their own internal log API system was equally impressive. It reinforced how critical the process of accumulating trustworthy data is to business success.
+
+What surprised me a little was that even an organization this committed to data-driven decisions didn't have an automated verification process for logging logic from the start. Logging code is still code written by humans — and yet it had been sitting in a blind spot of the testing process. The incident where two months' worth of logs were being recorded incorrectly made that gap painfully concrete.
+
+The fact that they then built regression tests to solve the problem felt like more than just a technical improvement — it was a fundamental change that raised the reliability of the business itself. For data-driven decisions to actually mean something, the data being collected must be trustworthy. And for that data to be trustworthy, the process that generates it must be verified. That chain of logic really sank in for me.
+
+If I'm ever in a position to add or improve logging logic at some organization in the future, I'll definitely think back to this session. Verifying logging logic isn't optional — it's required. I came away with a strong sense that it needs to be designed with automated testing baked in from the start.
+
+More than anything, this session drove home the importance of **validating the invisible**. We generally test features that users can see. But logs can be recorded incorrectly even when the feature is working fine, and that kind of error doesn't show up easily in a QA pass. How rigorously an organization validates the things it can't see directly is, in the end, a measure of how mature it is as a data-driven team.
+
+#### 2) Design System MCP
+
+**Session Summary**
+1. Woowa Brothers' design system "Wooahan Gongbang" (우아한공방) was causing confusion about which components to use, leading to a flood of inquiries and a rise in hardcoded values.
+2. Using AST-based code analysis via a library called Tracker, they quantified design token usage and instances of hardcoding, and implemented automated migration using codemods.
+3. They built an MCP server that unified three years of documentation, giving AI context about the design system through Resources (static information), Tools (search/execution), and Prompts (behavioral patterns).
+4. By providing just a Figma link, AI can now auto-generate complete code that follows design system rules, and complex migrations can be handled with a single command using codemod Prompts.
+
+**My Takeaways**
+
+First of all, **the fact that they built an MCP server themselves was genuinely surprising.** Rather than relying on off-the-shelf tools or third-party solutions, the approach of precisely defining the problem and then building a system tailored to that problem was deeply impressive.
+
+In particular, they took "Wooahan Gongbang" — a design system they had been running for three years — and systematically consolidated its extensive documentation into a form that AI could actually understand and work with. That kind of long-accumulated asset is what made it possible to provide consistent context to AI and operate it as a real system. Honestly, I was a little envious of that environment.
+
+This kind of problem-solving would have been hard to imagine before AI came along. The reasoning flowed naturally: "We're getting too many questions about how to use Wooahan Gongbang → there's a limit to how many a person can answer → so let's just build an AI server that answers them." That chain of logic itself felt like a glimpse into a **new paradigm of the AI era**. If MCP servers can be applied this way, I found myself wondering what other kinds of problems they could solve going forward.
+
+I was also struck by the use of AST (Abstract Syntax Tree) analysis to quantitatively measure how Wooahan Gongbang was actually being used in real code. Detecting hardcoded design tokens via AST and then automatically performing code migration is an approach that's highly efficient both technically and from an organizational operations perspective.
+
+But the part that impressed me most was the ability to **automatically generate code that follows design system rules from a Figma link alone**. On top of that, using **codemod prompts** to handle complex migrations with a single command — that was a genuinely innovative tool that managed to capture both developer productivity and design consistency at the same time.
+
+The biggest takeaway from this session was that **AI isn't simply a replacement for human labor — it can be a partner that makes development culture and collaboration healthier**. I came away with a strong sense of the potential for innovation that goes beyond just technology to transform how organizations and teams work together.
+
+
+## Closing Thoughts
+
+![](/images/tistory/woowacon-2025/8b4096cbaed8.jpg)
+
+Just getting to attend my first tech conference was already exciting on its own, but being able to go with **three friends from Hanghaeplust (항해플러스) cohort 6** made it all the more meaningful. The fact that the friends I went with were some of the most standout people from our cohort made it feel genuinely special to share the day with them.
+
+After the event, we went for a meal at **Muwol Siktak (무월식탁)**, a place recommended by Junhyeong — the food was really delicious. Spending time with great people over great food made the whole day feel like it wrapped up perfectly. And getting to have a coffee chat with **Coach Seongho**, who works at Woowa Brothers, was a wonderful bonus.
+
+I had only met Coach Seongho once during a mentoring session back in week 1 of Hanghaeplust, so I had always regretted not getting more time for a deeper conversation. This time, though, we talked not just about development but about all kinds of personal things too, which made it a really enjoyable chat.
+
+Here's hoping another opportunity like this comes my way... please! 🙏  
+Starting today: **Day 1 of praying to get into a conference** — the count resets 😆

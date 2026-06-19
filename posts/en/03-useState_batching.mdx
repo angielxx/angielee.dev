@@ -1,0 +1,212 @@
+---
+title: How React Processes State Update Logic
+description: Let's explore the problems caused by useState's asynchronous behavior and understand why it works that way.
+date: "2023-08-11"
+category: "React"
+tags: []
+---
+
+While using React, I had always known that "useState works asynchronously." I wanted to dig deeper into how it actually works by going through the official documentation.
+
+# Quiz
+
+If you click the button once in the code below, what will the value of `number` be?
+
+```jsx
+import { useState } from 'react';
+
+export default function Counter() {
+  const [number, setNumber] = useState(0);
+
+  return (
+    <>
+      <h1>{number}</h1>
+      <button
+        onClick={() => {
+          setNumber(number + 1);
+          setNumber(number + 1);
+          setNumber(number + 1);
+        }}
+      >
+        +3
+      </button>
+    </>
+  );
+}
+```
+
+Intuitively, you might think the answer is 3 since we called `setNumber(number + 1)` three times — but the actual answer is 1.
+
+Why does this happen?
+
+# State as a Snapshot
+
+When you call `useState`, React calculates the state and provides a snapshot of the state needed for the current render. This value stays constant throughout that render phase.
+
+That's why the `number` used in `setNumber(number + 1)` is fixed at 0, no matter how many times you call `setNumber`.
+
+```jsx
+setNumber(0 + 1);
+setNumber(0 + 1);
+setNumber(0 + 1);
+```
+
+So how does React handle these three calls to `setNumber(0 + 1)`?
+
+# React "batches" State Updates
+
+> React "batches" state updates
+
+That's exactly how the official documentation describes it. The word "batch" means "to process as a single unit." In other words, React waits for all the code in an event handler to finish executing before processing all the state updates at once.
+
+This is what React calls **batching**, and it optimizes rendering by preventing multiple re-renders from occurring within a single event.
+
+This batched state processing happens before the next render. Each `setNumber` call is queued up and executed in order.
+
+```jsx
+setNumber(0 + 1);
+setNumber(0 + 1);
+setNumber(0 + 1);
+```
+
+These consecutive calls to `setNumber(0 + 1)` line up in the queue one by one.
+
+We can visualize the queue like this:
+
+```jsx
+queue: [setNumber(0 + 1), setNumber(0 + 1), setNumber(0 + 1)];
+```
+
+Now let's process them one by one:
+
+1. Dequeue `setNumber(0 + 1)` — `number` becomes 1.
+2. Dequeue `setNumber(0 + 1)` — `number` becomes 1.
+3. Dequeue `setNumber(0 + 1)` — `number` becomes 1.
+4. Queue is empty. The final value of `number` is 1.
+
+On the next render, React provides the component a snapshot of `number = 1`.
+
+# Passing an Updater Function to useState
+
+To ensure state is updated based on the previous value, you can pass a callback function to the state setter like this:
+
+```jsx
+setSomething((prevState) => prevState + 1);
+```
+
+Let's fix the earlier example using this approach:
+
+```jsx
+import { useState } from 'react';
+
+export default function Counter() {
+  const [number, setNumber] = useState(0);
+
+  return (
+    <>
+      <h1>{number}</h1>
+      <button
+        onClick={() => {
+          setNumber((n) => n + 1);
+          setNumber((n) => n + 1);
+          setNumber((n) => n + 1);
+        }}
+      >
+        +3
+      </button>
+    </>
+  );
+}
+```
+
+Now, what will `number` be after clicking the button once? The answer is 3!
+
+```jsx
+setNumber((n) => n + 1);
+setNumber((n) => n + 1);
+setNumber((n) => n + 1);
+```
+
+Each `setNumber(n => n + 1)` call is queued in order just like before:
+
+```jsx
+queue: [
+  setNumber((n) => n + 1),
+  setNumber((n) => n + 1),
+  setNumber((n) => n + 1),
+];
+```
+
+Processing them one by one:
+
+1. Dequeue `setNumber(n => n + 1)`. The previous state (n) was 0, so the current state becomes 1 (n + 1).
+2. Dequeue `setNumber(n => n + 1)`. The previous state (n) was 1, so the current state becomes 2 (n + 1).
+3. Dequeue `setNumber(n => n + 1)`. The previous state (n) was 2, so the current state becomes 3 (n + 1).
+4. Queue is empty. The final value of `number` is 3.
+
+Now a question might come to mind: didn't `setNumber(number + 1)` also have a previous state? Why didn't it work the same way?
+
+# When Passing a Direct Value, the Previous State Is Ignored
+
+Actually, `setNumber(number + 1)` did have a previous state internally — it just wasn't used.
+
+> `setNumber(number + 1)` is `setNumber(0 + 1)`,
+> and `setNumber(0 + 1)` is equivalent to `setNumber(n => 0 + 1)`.
+
+If you convert `setNumber(number + 1)` to a callback form, it becomes `setNumber(n => number + 1)`. Since `number` is already fixed at 0, `n` simply isn't used in the calculation.
+
+So what happens when you mix both approaches — passing a direct value and passing an updater function — within the same component?
+
+# Another Quiz
+
+What will the value of `number` be in the example below? Will it be 1? 5? Or 6?
+
+```jsx
+import { useState } from 'react';
+
+export default function Counter() {
+  const [number, setNumber] = useState(0);
+
+  return (
+    <>
+      <h1>{number}</h1>
+      <button onClick={() => {
+          setNumber(number + 5);
+          setNumber(n => n + 1);
+        }}>
+    </>
+  )
+}
+```
+
+The answer is 6!
+
+Let's trace through the queue like before. First, remember that `number` is fixed at 0 during the current render phase.
+
+```jsx
+setNumber(0 + 5);
+setNumber((n) => n + 1);
+```
+
+These calls line up in the queue:
+
+```jsx
+queue: [setNumber(0 + 5), setNumber((n) => n + 1)];
+```
+
+Processing them one by one:
+
+1. Dequeue `setNumber(0 + 5)`. This is equivalent to `setNumber(n => 0 + 5)`, so `n` is ignored and the current state becomes 5.
+2. Dequeue `setNumber(n => n + 1)`. The previous state was 5, so it becomes `setNumber(5 => 5 + 1)`, making the current state 6.
+
+# Summary
+
+> State updates do not change the variable in the current render phase — they request a new render.
+
+> React waits for all the code in an event handler to finish executing before processing state updates all at once. This process is called **batching**.
+
+> To update the same state multiple times within a single event, pass an updater function to the setter — like `setNumber(n => n + 1)`.
+
+References
+
+[https://react.dev/learn/queueing-a-series-of-state-updates](https://react.dev/learn/queueing-a-series-of-state-updates)

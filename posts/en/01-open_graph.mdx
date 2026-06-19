@@ -1,0 +1,133 @@
+---
+title: The Open Graph Protocol (feat. SEO)
+description: What exactly is the 'og tag' inside an HTML head element?
+date: "2023-03-27"
+category: "개발 일반"
+tags: []
+---
+
+### Why I Wrote This
+
+At the time of writing (March 27, 2023), I was working on a project that crawls tech blog posts and recommends them to users based on their interests. The server provides the post data, and the frontend was supposed to scrape the preview image from the page's metadata — which was not something I had originally planned for.
+
+While implementing this unexpected "URL metadata scraping" feature, I came across Open Graph for the first time and decided to write it up.
+
+# Introduction
+
+When you send a link on KakaoTalk, it instantly shows a preview with a title, description, and image for that URL. KakaoTalk clearly doesn't store information about every link on the internet — so how does this preview work?
+
+### The Short Answer
+
+Through the internet protocol called **Open Graph**, the metadata stored in HTML `meta` tags is used to generate those link previews!
+
+# What Is the Open Graph Protocol?
+
+> An internet protocol created by Facebook in 2010, designed to standardize the metadata that describes the content of a web page.
+
+The metadata inside the `meta` tags of an HTML document, when written to conform to the Open Graph protocol, is what makes those previews possible.
+
+If you open any post on Velog and inspect the HTML in the developer tools, you can immediately see the Open Graph meta tags in action.
+
+![](https://velog.velcdn.com/images/94applekoo/post/7765f701-53cf-4818-aa25-cdc3a26ccd11/image.png)
+
+In the screenshot above, you can see `meta` tags whose `property` attribute follows the format `og:~`. Here, `og` stands for Open Graph.
+
+# Why Open Graph Was Created
+
+Open Graph was developed by Facebook to provide a better user experience when sharing web pages in a social media environment. Before it existed, sharing a link on platforms like Facebook would often result in no preview at all, or a preview that included irrelevant information.
+
+To solve this problem, Facebook developed Open Graph. It allows web pages to communicate their content more clearly by providing a title, description, image, and other metadata — so users can understand what a page is about before they ever click the link.
+
+# How It Works
+
+Crawlers from services like KakaoTalk and Facebook visit the HTML meta tags of a page and scrape the Open Graph data to generate a preview.
+
+> 1. A user types a link into the input field.
+> 2. Facebook, Naver Blog, KakaoTalk detect that the string is a "link." (They use what's commonly called a regular expression to identify it as a URL.)
+> 3. Once a link is detected, the crawlers for Facebook, Naver Blog, and KakaoTalk proactively visit that website and scrape the Open Graph metadata from the HTML `<head>`.
+> 4. Among that metadata, `og:title`, `og:description`, and `og:image` represent the title, description, and image respectively.
+> 5. The service then uses that information to render the link preview.
+
+###### Source: [AB180 Blog](https://blog.ab180.co/posts/open-graph-as-a-website-preview)
+
+![](https://velog.velcdn.com/images/94applekoo/post/eb47ee8d-1467-4cc2-8567-349b87eebb3c/image.png)
+
+###### Source: [AB180 Blog](https://blog.ab180.co/posts/open-graph-as-a-website-preview)
+
+# Basic Metadata
+
+[Open Graph Official Site](https://ogp.me/)
+
+Visiting the official documentation at the link above, you'll find a wide variety of metadata types. The four basic ones are:
+
+![](https://velog.velcdn.com/images/94applekoo/post/022f7563-e432-4837-aad2-02ad742d6916/image.png)
+
+- `og:title` : The title of the content
+- `og:type` : The type of the content
+- `og:image` : The URL of an image representing the content
+- `og:url` : The canonical URL that can be used as a unique identifier for the page (this seems to be used to distinguish individual links)
+
+#### Usage Example
+
+```html
+<html prefix="og: https://ogp.me/ns#">
+  <head>
+    <title>The Rock (1996)</title>
+    <meta property="og:title" content="The Rock" />
+    <meta property="og:type" content="video.movie" />
+    <meta property="og:url" content="https://www.imdb.com/title/tt0117500/" />
+    <meta
+      property="og:image"
+      content="https://ia.media-imdb.com/images/rock.jpg"
+    />
+    ...
+  </head>
+  ...
+</html>
+```
+
+The official documentation also shows that there are many additional metadata tags supported for expressing more structured data.
+
+# Open Graph Usage Distribution
+
+[BuiltWith](https://trends.builtwith.com/docinfo) is a website that analyzes the technologies used to build web pages. As of March 27, 2023, Open Graph ranked in the top 8.
+
+![](https://velog.velcdn.com/images/94applekoo/post/05e4f6e0-d733-47b9-9fb6-0b8d9dbfd927/image.png)
+
+Consistent with this ranking, opening the developer tools on most websites confirms that they use Open Graph meta tags.
+
+##### Open Graph Official Docs
+
+![](https://velog.velcdn.com/images/94applekoo/post/07cf17f6-f3f5-40a8-8cbc-eaa26e343179/image.png)
+
+##### Naver
+
+![](https://velog.velcdn.com/images/94applekoo/post/98845460-95ca-44e4-a67d-256277c91ae8/image.png)
+
+##### Woowa Brothers Tech Blog
+
+![](https://velog.velcdn.com/images/94applekoo/post/8f8d3f50-7aa0-42bc-bf20-cb91cdcbe819/image.png)
+
+##### Baekjoon Online Judge
+
+![](https://velog.velcdn.com/images/94applekoo/post/72579264-9bd7-43b9-8667-b49f8370b7b7/image.png)
+
+# There Are Exceptions
+
+Google has no Open Graph meta tags at all.
+
+![](https://velog.velcdn.com/images/94applekoo/post/ca21b835-fd67-409a-9b1f-b3b85caec964/image.png)
+
+> ChatGPT, help me out...!
+
+![](https://velog.velcdn.com/images/94applekoo/post/a9b98181-3840-4070-982f-b5f19e6e9f55/image.png)
+
+> What even is schema.org...?
+
+After some research, I found out that this metadata protocol — known as "Schema Markup" — is a protocol used for Search Engine Optimization (SEO). (Open Graph, by contrast, is not used for SEO.)
+
+# Conclusion
+
+Open Graph is a metadata protocol designed to provide link previews of web pages in social media contexts, while Schema.org is a metadata protocol that allows search engines to parse and structure the information on a web page.
+
+~~What a rabbit hole — the web is endlessly fascinating...!~~

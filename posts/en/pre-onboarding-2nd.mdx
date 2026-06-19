@@ -1,0 +1,478 @@
+---
+title: 'Pre-Onboarding Internship Week 2: Infinite Scroll and Error Boundary'
+description: 'A walkthrough and retrospective on implementing infinite scroll with Error Boundary and Suspense to declaratively handle async state at the per-page level'
+date: "2023-09-02"
+category: "회고"
+tags: []
+---
+
+## Main Goals of the Assignment
+
+(The requirements and API details are confidential, so I'll give a brief overview focused on the parts I put the most thought into.)
+
+The two most important features in this assignment were infinite scroll and error handling. I decided to use Suspense and Error Boundary to handle async states like loading and error in a declarative way. Since Suspense requires a global state library that returns a Promise, and the project used Context API, I substituted Suspense with a dedicated fetcher component instead.
+
+In particular, because the infinite scroll sends API requests on a per-page basis, I wanted error and loading boundaries scoped to match that granularity. Wrapping the entire infinite scroll list in a single Error Boundary would mean that a failure on any one page would replace the whole list with a fallback UI — which obviously hurts the user experience. (Imagine the user's target data is on page 4, but an error occurs on page 5 — they'd have to start over from page 1.)
+
+For this reason, I designed the component structure to handle loading states and errors at the per-page level. In this post, I'll walk through the design decisions I made while building this, and the challenges I ran into along the way.
+
+## What Is an Error Boundary?
+
+Introduced in React 16, an Error Boundary is a component that can catch errors thrown by its child components and handle them gracefully. React doesn't ship a ready-made Error Boundary component — you build one by overriding lifecycle methods of a class component. (Implementing it as a function component is not currently possible.)
+
+The basic shape looks like this:
+
+```javascript
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    // Update state so the next render shows the fallback UI.
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, info) {
+    // You can log the error to an error reporting service here.
+    logErrorToService(error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // You can render any custom fallback UI here.
+      return <h1>Something went wrong.</h1>;
+    }
+
+    return this.props.children;
+  }
+}
+```
+
+Since this post focuses on the implementation process rather than the concept itself, I'd recommend checking out other resources to get familiar with the basics first!
+
+## Implementation Walkthrough
+
+#### Component Structure
+
+> I want to handle errors and loading states per page so I can provide a narrower-scoped fallback UI and give users appropriate guidance.
+
+With that goal in mind, my approach was to wrap each page component individually in a Suspense (fetcher) and an Error Boundary. The structure for each page component looks like this:
+
+```javascript
+<ApiErrorBoundary> // handles errors from API calls within a single page
+  <IssuePageFetcher> // responsible for the API call for a single page
+    <IssueListPerPageContainer> // renders the page data on screen
+  <IssuePageFetcher />
+<ApiErrorBoundary />
+```
+
+When multiple pages are rendered, the abstract structure looks like this:
+
+```javascript
+<ApiErrorBoundary> // page 1
+  <IssuePageFetcher>
+    <IssueListPerPageContainer>
+  <IssuePageFetcher />
+<ApiErrorBoundary />
+<ApiErrorBoundary> // page 2
+  <IssuePageFetcher>
+    <IssueListPerPageContainer>
+  <IssuePageFetcher />
+<ApiErrorBoundary />
+<ApiErrorBoundary> // page 3
+  <IssuePageFetcher>
+    <IssueListPerPageContainer>
+  <IssuePageFetcher />
+<ApiErrorBoundary />
+// ...
+```
+
+The most important thing was ensuring each page maintained this structure so that async logic could be scoped to its corresponding API request boundary.
+
+### Where Does the Data Come From? — Context API
+
+Before diving into the other pieces, let's look at what data is being managed and how.
+
+This assignment only needed two pieces of data: an `Issue List` for the infinite scroll, and an `Issue` for the issue detail page. Since there were only two data concerns, I decided Context API was lighter and simpler than bringing in a third-party global state library.
+
+#### Issue Data for the Detail Page
+
+The `Issue` data used on the issue detail page didn't need to live in a Provider. Instead, I used React Router's `loader` option to fetch it before the component mounts and pass it directly to the detail page.
+
+A loader simply prepares data (or other resources) before a component renders. I defined the `Issue` loader and applied it in the router like this:
+
+```javascript
+// issueLoader.ts
+import { getIssueById } from '@/apis/api';
+import { refineIssue } from '@/apis/service';
+
+export const issueLoader = async (id: number) => {
+  const response = await getIssueById(id);
+  const issue = refineIssue(response);
+  return issue;
+};
+```
+
+```javascript
+// router.tsx
+import { createBrowserRouter } from 'react-router-dom';
+
+import { Home, Issue, Root } from '@/pages';
+import { issueLoader } from '@/utils/loader';
+import { IssueListProvider } from '@/context/IssueListProvider';
+
+const router = createBrowserRouter([
+  {
+    element: <Root />,
+    children: [
+      {
+        path: '',
+        element: (
+          <IssueListProvider>
+            <Home />
+          </IssueListProvider>
+        ),
+      },
+      {
+        path: 'issues/:id',
+        element: <Issue />,
+        // fetch Issue data using route params
+        loader: ({ params }) => issueLoader(Number(params.id)),
+      },
+    ],
+  },
+]);
+
+export default router;
+```
+
+Data fetched via a loader can be accessed inside the component by calling `useLoaderData`:
+
+```javascript
+// Issue.tsx
+export const Issue = () => {
+  const issue = useLoaderData() as IssueItem;
+
+	//...
+};
+```
+
+#### IssueList Data for Infinite Scroll
+
+`IssueList` data is consumed in one place, but the various states and actions related to it are needed across multiple components — so I stored it globally and made it available throughout. I split the context into `state` and `dispatch` to separate concerns and minimize unnecessary re-renders of the Provider when state changes. (`state` holds data; `dispatch` holds actions.)
+
+```javascript
+// IssueListProvider.tsx
+interface StateType {
+  issueList: PageType[];
+  page: number;
+  hasNextPage: boolean;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+interface DispatchType {
+  fetchIssueByPage: (page: number) => void;
+  addPage: () => void;
+  setPrevPageIsLoading: (value: boolean) => void;
+  setPrevPageError: (error: Error) => void;
+}
+
+// context for state
+export const IssueListStateContext =
+  (createContext < StateType) | (null > null);
+// context for dispatch
+export const IssueListDispatchContext =
+  (createContext < DispatchType) | (null > null);
+
+const IssueListProvider = ({ children }: { children: ReactNode }) => {
+  //...
+};
+```
+
+One thing worth noting: the Provider stores not just `IssueList` data but also API state like `hasNextPage`, `isLoading`, `error`, and `page` (current page number). These are used to gate the conditions under which the next page gets fetched.
+
+```javascript
+// IssueListProvider.tsx
+
+// ...
+const IssueListProvider = ({ children }: { children: ReactNode }) => {
+   const [issueList, setIssueList] = useState<PageType[]>([]);
+   const [page, setPage] = useState<number>(1);
+   const [hasNextPage, setHasNextPage] = useState(true);
+   const [isLoading, setIsLoading] = useState<boolean>(false);
+   const [error, setError] = useState<Error | null>(null);
+
+   //...
+};
+
+```
+
+The dispatch context currently exposes four functions. The fetch function for each page only makes the request from the Provider — the actual try-catch for per-page error handling lives inside the Fetcher.
+
+```javascript
+// IssueListProvider.tsx
+
+// ...
+const IssueListProvider = ({ children }: { children: ReactNode }) => {
+  //...
+
+  async function fetchIssueByPage(pageNum: number) {
+    const data = await getIssuesPerPage(pageNum);
+    const newPage = refineIssuesList(data);
+
+    setIssueList((prev) => {
+      if (!prev.some((item) => item.page === pageNum)) {
+        return [...prev, { page: pageNum, data: newPage }];
+      } else {
+        return prev;
+      }
+    });
+    setHasNextPage(!!data.length);
+  }
+};
+```
+
+### Handling Async API Calls — ApiErrorBoundary and Fetcher
+
+As mentioned above, the structure for each page component is:
+
+```javascript
+<ApiErrorBoundary> // handles errors from API calls within a single page
+  <IssuePageFetcher> // responsible for the API call for a single page
+    <IssueListPerPageContainer> // renders the page data on screen
+  <IssuePageFetcher />
+<ApiErrorBoundary />
+```
+
+Let's look at the roles and code for `IssuePageFetcher` and `ApiErrorBoundary`.
+
+#### IssuePageFetcher
+
+`IssuePageFetcher` is responsible for the API call for each page and serves as a stand-in for Suspense. It handles the loading and error states for each page's API call via a try-catch block, and returns either a loading indicator or the child component depending on the current loading state.
+
+```javascript
+// IssuePageFetcher.tsx
+const IssuePageFetcher = ({ children, page }: Props) => {
+  const { state, dispatch } = useContextNullCheck();
+
+  const {
+    hasNextPage,
+    isLoading: prevPageIsLoading,
+    error: prevPageError,
+  } = state;
+
+  const { fetchIssueByPage, setPrevPageError, setPrevPageIsLoading } = dispatch;
+
+  const [thisPageIsLoading, setThisPageIsLoading] = useState < boolean > false;
+  const [thisPageError, setThisPageError] = (useState < Error) | (null > null);
+
+  const fetchThisPage = async () => {
+    try {
+      setThisPageIsLoading(true);
+      setPrevPageIsLoading(true);
+      fetchIssueByPage(page);
+    } catch (err) {
+      if (err instanceof Error) {
+        setThisPageError(err);
+        setPrevPageError(err);
+      } else {
+        throw Error('unexpected error');
+      }
+    } finally {
+      setThisPageIsLoading(false);
+      setPrevPageIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (hasNextPage && !prevPageIsLoading && !prevPageError) {
+      fetchThisPage();
+    }
+  }, []);
+
+  if (thisPageError) {
+    throw thisPageError;
+  }
+
+  if (thisPageIsLoading) {
+    return <ApiLoader />;
+  }
+
+  return children;
+};
+```
+
+#### ApiErrorBoundary
+
+`ApiErrorBoundary` receives the error thrown by the Fetcher, branches on the error type, and either renders a fallback UI or rethrows it. Referencing the GitHub API official documentation, I scoped `ApiErrorBoundary` to only handle GitHub API-related errors — all other errors get rethrown.
+
+```javascript
+class ApiErrorBoundary extends Component<Props, State> {
+   //...
+
+   // catch the error and branch based on type
+    public static getDerivedStateFromError(error: Error): State {
+    if ([401, 403, 404].includes(error.code)) {
+      return {
+        shouldHandleError: false,
+        shouldRethrow: true,
+        error,
+      };
+    }
+    return {
+      shouldHandleError: true,
+      shouldRethrow: false,
+      error,
+    };
+  }
+
+   // return different values based on the branching result
+  render() {
+    const { error, shouldRethrow, shouldHandleError } = this.state;
+    const { fallback, children } = this.props;
+
+    if (shouldRethrow) {
+      throw error;
+    }
+
+    // error the user can retry
+    if (shouldHandleError && error) {
+      return fallback({ error, reset: this.resetErrorBoundary });
+    }
+
+    if (!shouldHandleError) {
+      return children;
+    }
+  }
+}
+```
+
+### Implementing Infinite Scroll
+
+I defined a custom hook that uses scroll events to expose whether the user has scrolled to the bottom of the page.
+
+The hook also returns `lockScroll` and `unlockScroll` functions. These prevent scroll events from firing in rapid succession while data is loading — the scroll is locked until loading finishes, then unlocked again.
+
+Without `lockScroll` and `unlockScroll`, the next page would start loading before the previous one had finished, causing multiple loading UIs to appear on screen simultaneously.
+
+```javascript
+// useDetectScroll.tsx
+import { useCallback, useEffect, useState } from 'react';
+
+import { toScrollFit } from '@/utils/toScrollFit';
+
+export const useDetectScroll = () => {
+  const [isEnd, setIsEnd] = useState(false);
+
+  const lockScroll = useCallback(() => {
+    document.body.style.overflow = 'hidden';
+  }, []);
+
+  const unlockScroll = useCallback(() => {
+    document.body.style.overflow = '';
+  }, []);
+
+  const detectIsEnd = () => {
+    const scrollHeight = document.documentElement.scrollHeight;
+    const scrollTop = document.documentElement.scrollTop;
+    const clientHeight = document.documentElement.clientHeight;
+
+    if (scrollTop + clientHeight >= scrollHeight) {
+      lockScroll();
+      setIsEnd(true);
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('scroll', toScrollFit(detectIsEnd), {
+      passive: true,
+    });
+    return () => window.removeEventListener('scroll', detectIsEnd);
+  }, []);
+
+  return { isEnd, setIsEnd, lockScroll, unlockScroll };
+};
+```
+
+Now let's put it all together to render the infinite scroll. On initial render, there's no data yet because the Fetcher only requests data when it mounts. Directly mapping over the globally stored data would either render nothing or throw an error — `map` implicitly assumes the data already exists.
+
+To work around this, I used an ad-hoc array that holds the page numbers to render. It starts as `[1]` and grows like `[1, 2, 3]` as the user scrolls. Mapping over this array renders the corresponding page components.
+
+Here's the `Home` component that renders the infinite scroll:
+
+```javascript
+// Home.tsx
+export const Home = () => {
+  const [pageList, setPageList] = useState([1]);
+  const { isEnd, setIsEnd, lockScroll, unlockScroll } = useDetectScroll();
+
+  const { state, dispatch } = useContextNullCheck();
+  const { addPage } = dispatch;
+
+  const {
+    hasNextPage,
+    isLoading: prevPageIsLoading,
+    error: prevPageError,
+  } = state;
+
+  useEffect(() => {
+    if (isEnd) {
+      if (!prevPageIsLoading && hasNextPage) {
+        setPageList((prev) => [...prev, prev[prev.length - 1] + 1]);
+        addPage();
+      }
+      unlockScroll();
+      setIsEnd(false);
+    }
+  }, [isEnd]);
+
+  return (
+    <div>
+      {pageList.map((page) => (
+        <IssueListPageContainer key={page} page={page} />
+      ))}
+    </div>
+  );
+};
+```
+
+`pageList` is mapped to render each page component in order. When `isEnd` from `useDetectScroll` becomes true (the user reaches the bottom), the next page number is appended to `pageList`, causing a new page component to mount. When that page component mounts, its child Fetcher fires the API request, handles loading and errors, and finally displays the UI once loading completes.
+
+The part I kept struggling with even after submission was the issue of "multiple loading UIs appearing simultaneously because the next page starts loading before the previous one finishes." Looking at the `useEffect` in the `Home` component:
+
+```javascript
+useEffect(() => {
+  if (isEnd) {
+    if (!prevPageIsLoading && hasNextPage) {
+      setPageList((prev) => [...prev, prev[prev.length - 1] + 1]);
+      addPage();
+    }
+    unlockScroll();
+    setIsEnd(false);
+  }
+}, [isEnd]);
+```
+
+Even when the scroll reaches the bottom, a new page is only appended to `pageList` if the previous page has finished loading and there is a next page (`if (!prevPageIsLoading && hasNextPage)`). That condition was the fix.
+
+## Retrospective
+
+> Thinking through the design was genuinely fun!
+
+During my time at SSAFY, I was always rushing to get features working and never had the mental bandwidth to think carefully about code quality. (Honestly, I hadn't had enough experience implementing features at all, so I probably wasn't at a level where I could reason about good code under time pressure.) This time, even with limited time, I wanted to push myself to think as hard as I could within that constraint. Designing the architecture with my own reasoning and then bringing it to life was so engaging that I spent the whole day on it without noticing time passing.
+
+Of course, what I designed in my head was much harder to actually implement — thinking through a solution and building it are very different things. But I kept pushing in the direction I'd set for myself, and ultimately managed to get the implementation to match the design I had in mind.
+
+> I feel like I grew a lot in a short time!
+
+I'd been curious about Error Boundary for a while, and this assignment gave me the chance to really dig into the concept, its usage, and error handling in general. (I can't even imagine how much more complex error handling gets at a production level.) More sophisticated branching logic and providing users with actionable recovery guidance is still out of my reach right now. Time ran short during this assignment so I wasn't able to apply it properly in the individual project, but once the Pre-Onboarding Internship wraps up, I plan to revisit these assignments and raise the quality bar.
+
+## References
+
+[https://jbee.io/react/error-declarative-handling-1/](https://jbee.io/react/error-declarative-handling-1/)
+[https://jbee.io/react/error-declarative-handling-2/](https://jbee.io/react/error-declarative-handling-2/)
+[https://jbee.io/react/error-declarative-handling-3/](https://jbee.io/react/error-declarative-handling-3/)
+[https://fe-developers.kakaoent.com/2022/221110-error-boundary/](https://fe-developers.kakaoent.com/2022/221110-error-boundary/)

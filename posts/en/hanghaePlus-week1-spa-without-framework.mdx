@@ -1,0 +1,560 @@
+---
+title: "Hanghae Plus Frontend Cohort 6, Week 1: Building an SPA Without a Framework"
+description: "A retrospective on the Week 1 Hanghae Plus assignment — implementing an SPA from scratch using vanilla JavaScript."
+date: "2025-07-13"
+category: "회고"
+tags: ["항해플러스"]
+---
+
+![](/images/tistory/hanghaePlus-week1-spa-without-framework/090564aab5ff.jpg)
+
+![](/images/tistory/hanghaePlus-week1-spa-without-framework/d93519ec798b.jpg)
+
+ 
+
+ 
+
+Looking back on this assignment, every single moment was a trial — filled with hardship and struggle.
+
+ 
+
+Faced with the sheer volume of work, I made a firm decision: **"To get through this assignment, I have to work on it every waking hour."** And I meant it. For an entire week, I went to work in the morning, kept working through lunch, and then stayed up past midnight with my laptop — day after day.
+
+ 
+
+Knowing I had to do this **nine more times**… I couldn't help wondering, **"Can I actually pull this off?"**
+
+But because I threw myself at it so intensely, I felt in my bones just how much React does for developers behind the scenes.
+
+Client-side routing, component lifecycle management, efficient rendering via a virtual DOM…
+
+ 
+
+Every time I hit a wall while implementing an SPA in vanilla JavaScript, I found myself blurting out: **"React is a gift from the gods!"**
+
+ 
+
+In this post, I want to reflect on the problems I ran into while building the SPA and the solutions I chose.
+
+(How React addresses these same problems is something I plan to write about separately after finishing Hanghae.)
+
+ 
+
+## Topic and Goals
+
+The Week 1 assignment was "Building an SPA Without a Framework." I initially thought the core challenges would be "implementing routing" and "rendering components" — but there turned out to be far more problems than I anticipated.
+
+ 
+
+## Router: Client-Side Routing with the Singleton Pattern
+
+The essence of an SPA is navigating between views without a full-page reload (no flash of blank screen). In client-side routing, the browser doesn't request a new document from the server; instead, JavaScript updates only the DOM within the existing document.
+
+The key behaviors I implemented for this were:
+
+1. **Detecting route changes**
+
+1. **Rendering the component that matches the current path**
+
+1. **Parsing query parameters**
+
+Since the router needs to manage both state and behavior, I built it as a class and applied the **Singleton pattern** to guarantee a single instance.
+
+```
+`// Router.js
+export class Router {
+  constructor(routes, rootElement) {
+    this.routes = routes;
+    this.rootElement = rootElement;
+    this.queryParams = {};
+    this.params = {};
+
+    // Set as the global router instance
+    Router.instance = this;
+
+    this.init();
+  }
+
+  init() {
+    // popstate event (back/forward navigation)
+    window.addEventListener("popstate", () => {
+      this.handleRouteChange();
+    });
+
+    this.handleRouteChange();
+  }
+
+  // Actions to perform whenever the URL changes
+  handleRouteChange() {
+    // Parse query params and path params on every URL change
+    this.parseQueryParams();
+    this.render();
+  }
+
+  // Render the component matching the current path into rootElement
+  render() {
+    const route = this.getCurrentRoute();
+
+    // Destroy the existing instance
+    if (this.currentInstance && this.currentInstance.destroy) {
+      this.currentInstance.destroy();
+    }
+
+    // Create a new component instance
+    const ComponentClass = route.component;
+
+    this.currentInstance = new ComponentClass(this.rootElement, {
+      params: this.params,
+      query: this.queryParams,
+    });
+  }
+  
+  // navigate also triggers handleRouteChange
+  navigate(to, replace = false) {
+    // Normalize path: remove leading / before query string
+    const normalizedPath = this.normalizePath(to);
+
+    if (replace) {
+      window.history.replaceState(null, "", normalizedPath);
+    } else {
+      window.history.pushState(null, "", normalizedPath);
+    }
+
+    this.handleRouteChange();
+  }
+
+	// ...omitted
+	
+  // Return the singleton instance
+  static getInstance() {
+    return Router.instance;
+  }
+}`
+```
+
+#  
+
+## Components — The Lifecycle Nightmare
+
+The hardest part was designing how to re-render a component whenever its state changed.
+
+I started with a functional approach, but had no idea how to control the lifecycle, so I pivoted to a class-based structure with explicit lifecycle methods — similar to React's class components.
+
+Everything that React's `useEffect` dependency array and cleanup function handle automatically, I had to manage by hand. It was far harder than I expected.
+
+```
+`// Component.js
+export default class Component {
+  constructor($target, props) {
+    this.$target = $target; // Parent DOM element
+    this.props = props;     // Props
+    this.state = {};        // Initial state
+    this.child = new Map(); // Child component registry (prevents duplicate instances)
+
+    this.setup();  // Initialize state
+    this.render(); // Initial render
+  }
+
+  setup() {
+    // Define initial state, kick off async data fetching, etc.
+  }
+
+  mounted() {
+    // Logic to run after the DOM has rendered (e.g., DOM access, focus management)
+  }
+
+  template() {
+    // Return an HTML string based on current state and props
+    return "";
+  }
+
+  render() {
+    this.$target.innerHTML = this.template();
+    this.setEvent();
+    this.mounted?.();
+  }
+
+  setState(newState) {
+    this.state = { ...this.state, ...newState };
+    this.render();
+  }
+  
+  setEvent() {
+    // Bind event listeners
+  }
+
+  cleanup() {
+    // Hook to tear down existing events/resources
+  }
+
+  destroy() {
+    this.cleanup();
+    this.child.forEach((child) => child.cleanup?.());
+    this.child.clear();
+    this.$target.innerHTML = "";
+  }
+}`
+```
+
+#### **Fixing the Zombie Component Problem**
+
+When navigating from the home page to a product detail page, the home page instance was lingering in memory — causing it to re-render on global state changes. This is what I called the **zombie component problem**. To fix it, I added code to the router that explicitly calls `destroy()` on the previous instance whenever a page transition occurs.
+
+```
+`  // Router's render method
+  render() {
+    const route = this.getCurrentRoute();
+
+    // Destroy the previous page instance if it exists
+    if (this.currentInstance && this.currentInstance.destroy) {
+      this.currentInstance.destroy();
+    }
+    
+    // ...new page component rendering logic omitted
+  }
+`
+```
+
+#### **Managing Child Components**
+
+Every time a page component re-rendered, it kept creating new instances of child components, which caused them to reset. This made me realize child components needed to be tracked and managed explicitly.
+
+To prevent this, I cached child components in a `Map` and, for already-created instances, called only `render()` instead of recreating them.
+
+```
+`// HomePage.js
+mounted() {
+    const $filterContainer = document.querySelector("#filter-container");
+    const $productListContainer = document.querySelector("#product-list-container");
+    const $headerContainer = document.querySelector("#header-container");
+
+    if (!this.child.get(CHILD_COMPONENT.HEADER)) {
+      const headerInstance = new Header($headerContainer);
+      this.addChild(headerInstance, CHILD_COMPONENT.HEADER);
+    } else {
+      const headerInstance = this.child.get(CHILD_COMPONENT.HEADER);
+      headerInstance.$target = $headerContainer;
+      headerInstance.render();
+    }
+
+    if (!this.child.get(CHILD_COMPONENT.FILTER)) {
+      const filterInstance = new Filter($filterContainer);
+      this.addChild(filterInstance, CHILD_COMPONENT.FILTER);
+    } else {
+      const filterInstance = this.child.get(CHILD_COMPONENT.FILTER);
+      filterInstance.$target = $filterContainer;
+      filterInstance.render();
+    }
+
+    if (!this.child.get(CHILD_COMPONENT.PRODUCT_LIST)) {
+      const productListInstance = new ProductList($productListContainer);
+      this.addChild(productListInstance, CHILD_COMPONENT.PRODUCT_LIST);
+    } else {
+      const productListInstance = this.child.get(CHILD_COMPONENT.PRODUCT_LIST);
+      productListInstance.$target = $productListContainer;
+      productListInstance.render();
+    }
+  }
+`
+```
+
+ 
+
+The code feels too verbose for my liking, and I'm still thinking about how to incorporate the child component management logic more cleanly into the base `Component` class.
+
+#  
+
+## Global State Management: Singleton + Observer Pattern
+
+I implemented global state using the **Singleton + Observer pattern**. The singleton guarantees a single instance, while the observer pattern notifies subscribers whenever state changes so they can re-render.
+
+```
+`// Store.js
+export default class Store {
+  static #instance;
+
+  #state;
+  #observers;
+
+  constructor(initialState) {
+    if (Store.#instance) {
+      return Store.#instance; // Return the existing instance if one already exists
+    }
+
+    this.#state = { ...initialState };
+    this.#observers = new Set();
+
+    Store.#instance = this; // Store the first-created instance
+  }
+
+  // Return current state
+  getState() {
+    return { ...this.#state };
+  }
+
+  // Update state
+  setState(partialState) {
+    // Recursive function for deep merge
+    const deepMerge = (target, source) => {
+      const result = { ...target };
+
+      for (const key in source) {
+        if (source[key] && typeof source[key] === "object" && !Array.isArray(source[key])) {
+          result[key] = deepMerge(target[key] || {}, source[key]);
+        } else {
+          result[key] = source[key];
+        }
+      }
+
+      return result;
+    };
+
+    this.#state = deepMerge(this.#state, partialState);
+    this.#notify();
+  }
+
+  // Register a subscriber
+  subscribe(observer) {
+    this.#observers.add(observer);
+    observer(this.getState()); // Immediately notify with the current state
+
+    // Return an unsubscribe function
+    return () => {
+      this.#observers.delete(observer);
+    };
+  }
+
+  // Notify all subscribers of a state change
+  #notify() {
+    this.#observers.forEach((observer) => observer(this.getState()));
+  }
+}
+`
+```
+
+The biggest challenge was **subscribing to and unsubscribing from state**. When a component subscribes to the store, a state change triggers a re-render — but if the component is destroyed without unsubscribing first, it causes a memory leak.
+
+#  
+
+## Technical Takeaways
+
+#### **1. Singleton and Observer Patterns**
+
+I had heard of these design patterns in theory but had never actually used them. Through this assignment, I applied them hands-on and gained a clear understanding of where and why they're needed. Since the observer pattern is widely used in global stores, I became curious how Redux and Zustand actually notify components that use a particular piece of state when that state changes.
+
+#### **2. `this` Binding**
+
+`this` binding was something I only knew from interview prep — but implementing event handlers gave me a deep, practical understanding of it. I ran into a problem where passing a class method as an event handler caused `this` to point to the DOM element rather than the class instance, making it impossible to access state.
+
+```
+`// When you register a class method as an event handler like this...
+button.addEventListener('click', this.handleClick);
+
+// `this` ends up pointing to the button DOM element!
+handleClick() {
+  console.log(this); // <button>...</button>
+  this.state.something; // Trying to access the instance's state, but it points to the DOM — error!
+}`
+```
+
+I learned through a real error — not theory — that you need to use `bind()` or an arrow function to fix this.
+
+#### **3. The Importance of Event Management**
+
+In React, event handlers are cleaned up automatically along with the component. In vanilla JS, I had to do it all manually. Clicking a product list item was triggering `navigate` multiple times, stacking the same URL repeatedly in the history. I learned that events absolutely must be removed in `cleanup()`. After that, I made sure every component that registers an event also removes it in `cleanup()`.
+
+```
+`// 🔥 Problematic code
+render() {
+  this.$target.innerHTML = this.template();
+  this.setEvent(); // Registers new event listeners on every render
+}
+
+setEvent() {
+  // Previous event listeners are never removed — duplicates accumulate
+  document.querySelectorAll('.product-item').forEach(item => {
+    item.addEventListener('click', this.handleProductClick);
+  });
+}
+
+cleanup(){
+	 document.querySelectorAll('.product-item').forEach(item => {
+    item.removeEventListener('click', this.handleProductClick);
+  });
+}`
+```
+
+ 
+
+The repetitive pattern of registering in `setEvent` and removing in `cleanup` still feels inefficient. If I were to rewrite this, I think the base `Component` class could manage event handlers via a `Map` keyed by identifier — similar to how child components are cached — and `cleanup` could iterate over that Map to remove all listeners automatically.
+
+#### **4. Event Delegation**
+
+I discovered event delegation late in the process, but it was a revelation: it cuts down on unnecessary bindings and enables more efficient event handling. When an event handler is registered on a DOM element, `this` inside the handler is determined by the call site, not the component where the handler was defined — which means it ends up pointing to the DOM. Event delegation sidesteps this `this`-binding issue entirely. I did use event delegation in some places during the project, but only for the convenience of selecting elements more easily. Had I understood the pattern upfront, I could have built a much more efficient event management system from the start.
+
+```
+`setup() {
+  this.handleProductClick = this.handleProductClick.bind(this);
+  
+  // Register the event only once on the parent element
+  document.addEventListener('click', this.handleProductClick);
+}
+
+handleProductClick(e) {
+  // Handle dynamic elements via event delegation
+  const productCard = e.target.closest('.product-card');
+  if (!productCard) return;
+
+  const productId = productCard.dataset.productId;
+  const navigate = useNavigate();
+  navigate(`/product/${productId}`);
+}
+
+cleanup() {
+  // Remove using the exact same function reference
+  document.removeEventListener('click', this.handleProductClick);
+}
+`
+```
+
+#  
+
+## Struggles and Open Questions
+
+#### **1. The Complexity of Component Lifecycles**
+
+Implementing a component lifecycle from scratch — after only reading about it in text — turned out to be genuinely complex.
+
+- **When to render**: On state change? On props change? When the parent re-renders?
+
+- **When to bind events**: After rendering? Every time? Only once?
+
+- **When to clean up**: On component destruction? On re-render?
+
+- **How to manage child components**: Re-create every time? Cache them?
+
+Handling all of this manually left enormous room for human error.
+
+It made me deeply appreciate how convenient React's `useEffect` dependency array and cleanup function really are.
+
+#### **2. The Challenge of Instance Management**
+
+When navigating from the home page to a product detail page, the home page instance wasn't being fully disposed of, which caused a memory leak.
+
+```
+`// 🔥 The problem
+// Home page → navigate to product detail → global state changes → home page component re-renders on screen!
+
+// HomePage.js
+setup() {
+  this.unsubscribe = homeStore.subscribe(() => {
+    // This still runs even when we're not on the home page
+    this.render();
+  });
+}`
+```
+
+ 
+
+To fix it, I added code to the router that fully destroys the previous instance on every page transition.
+
+```
+`render() {
+    const route = this.getCurrentRoute();
+
+    // Unmount the existing instance if there is one
+    if (this.currentInstance && this.currentInstance.destroy) {
+      this.currentInstance.destroy();
+    }
+
+    // Create a new component instance
+    const ComponentClass = route.component;
+
+    this.currentInstance = new ComponentClass(this.rootElement, {
+      params: this.params,
+      query: this.queryParams,
+    });
+  }
+`
+```
+
+#### **3. Excessive Re-rendering**
+
+I noticed that rendering wasn't happening just once — multiple components were re-rendering unnecessarily every time state changed. This experience helped me understand why React goes to such lengths to minimize renders through the Virtual DOM.
+
+##  
+
+## Things I Realized
+
+#### **1. React Is Genuinely Amazing**
+
+This experience made it crystal clear just how much complexity React hides away.
+
+- **State management**: Handled cleanly with `useState`, `useReducer`, and the Context API
+
+- **Lifecycle**: Managed elegantly with `useEffect`'s dependency array and cleanup function
+
+- **Performance optimization**: Efficient rendering via Virtual DOM, `React.memo`, and `useMemo`
+
+- **Event handling**: Consistent behavior through React's synthetic event system
+
+After implementing all of this piece by piece in vanilla JS, I have a genuine appreciation for how much thought went into React's design.
+
+#### **2. The Importance of Fundamentals**
+
+I learned a tremendous amount about JavaScript fundamentals that I'd never needed to think about while using a framework:
+
+- **Prototype chain and `this` binding**: How `this` is determined inside event handlers
+
+- **Closures and scope**: How variables are accessed inside event listeners
+
+- **Event loop and async**: Implementing throttle and debounce
+
+- **DOM manipulation and performance**: Reflow and repaint optimization
+
+I came away feeling strongly that solid fundamentals are what allow you to use a framework properly in the first place.
+
+#### **3. The Importance of Architectural Design**
+
+Even on a small project, I learned how much architecture matters.
+
+- **Component structure**: Building something reusable and maintainable
+
+- **State management**: Properly separating global state from local state
+
+- **Event system**: Safe, efficient event handling
+
+The initial design decisions determine the complexity of the entire project.
+
+##  
+
+## Closing Thoughts
+
+ 
+
+Building an SPA from scratch made me realize just how many hard problems React quietly solves on your behalf. It wasn't just "React is convenient" — I actually experienced firsthand **"why React was designed this way"** and **"what problems it was built to solve."**
+
+ 
+
+Because I felt the pain and the necessity so acutely — not just intellectually, but in my hands — it sparked a genuine desire to **dig into React's internals and understand how it actually works**. Going forward, I think I'll be able to develop with a much deeper understanding of "why React behaves the way it does."
+
+ 
+
+Sleeping only 3–4 hours a night, juggling a full-time job the entire time —
+
+I made it through. I'm proud of myself for that.
+
+ 
+
+***Nine more assignments to go. Don't forget the intensity of Week 1 — keep that same fire burning all the way through!***
+
+ 
+
+![](/images/tistory/hanghaePlus-week1-spa-without-framework/936be022f947.jpg)
+Hold on! Hang in there! Enjoy it!
+
+ 
+
+ 
+
+            

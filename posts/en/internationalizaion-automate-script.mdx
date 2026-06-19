@@ -1,0 +1,806 @@
+---
+title: 'Automating Translation Key Management for Internationalization (feat. react-i18next, Google Spreadsheet)'
+description: Let's automate the tedious manual work of managing translation keys using i18next-scanner and Google Spreadsheets.
+date: "2023-12-02"
+category: "개발 일반"
+tags: []
+---
+
+This is my first post related to real-world work experience. While cleaning up translation keys, I introduced an automation process — but during implementation, the project's folder structure required additional configuration beyond what I saw in other blog posts. I hope this helps others who find themselves in a similar situation, so I'd like to walk through my setup and how I solved it.
+
+# Background
+
+I was working as an intern at a startup, and I was assigned a task to reorganize all the translation keys used in the company's project. The existing JSON file that managed translation keys contained many unused keys, so I needed to collect only the ones actually in use. On top of that, since everything was crammed into a single JSON file with no namespace separation, I also had to split the file by feature.
+
+I needed to collect all translation keys being used in the code and organize them into JSON files and a Google Spreadsheet. My first thought was: "Am I really supposed to find each key one by one, verify it's in use, add it to the JSON, and then enter it into the spreadsheet...?" I quickly concluded that doing it manually would be incredibly inefficient.
+
+Sure enough — developers don't tolerate inefficiency! As soon as I searched for "translation key automation," I found that many people had already built automated workflows for this.
+
+## Why Automate?
+
+> Responding quickly to change
+
+Our services don't stand still. They constantly evolve to meet changing market conditions and user needs. The same goes for our translation keys — as the service changes, new keys get added and existing ones get modified.
+
+In a situation like that, having to manually add or update translation keys one by one on top of an already tight schedule? There's probably nothing more painful for a developer. And the more we reduce that kind of inefficient work, the more we can invest our precious time and energy into what actually matters!
+
+> Problems with the existing process
+
+There was no automation in place, so everything had to be done by hand:
+
+1. Whenever a text key is added or modified while implementing UI, manually update the Google Spreadsheet.
+2. Reflect the changes in the Google Spreadsheet.
+3. Once translations are complete in the spreadsheet, apply them back to the JSON files.
+
+Doing all of this manually is error-prone and wastes valuable developer time. (My precious time...)
+
+# Internationalization? Translation Keys? (react-i18next)
+
+Here's how the project currently implements multilingual support using react-i18next.
+
+Text values for each language are stored in JSON files like this. In the company project, JSON files follow the naming convention `{namespace}.{language}.json`.
+
+```jsx
+// namespace.en.json
+{
+	"exampleKey" : "example"
+}
+
+// namespace.ko.json
+{
+	"exampleKey" : "예시"
+}
+
+// namespace.ja.json
+{
+	"exampleKey" : "予示"
+}
+```
+
+Here is the i18next configuration to use these files. Inside `resources`, you specify which JSON to use — organized by language, then by namespace within each language.
+
+```jsx
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import namespaceKo from '...';
+import namespaceEn from '...';
+
+i18n
+  .use(initReactI18next)
+  .use(LanguageDetector)
+  .init({
+    resources: {
+      en: {
+        namespace: exampleEn,
+      },
+      ko: {
+        namespace: exampleKo,
+      },
+      ja: {
+        namespace: exampleJa,
+      },
+    },
+  });
+```
+
+Then, inside React components, you can use the `useTranslation` hook to select translations per namespace (language detection is handled automatically by LanguageDetector).
+
+```jsx
+// someComponent.tsx
+function someComponent() {
+  const { t } = useTranslation('namespace'); // select namespace
+
+  return (
+    <div>{t('exampleKey')}</div> // renders the text value corresponding to the key in the current language
+  );
+}
+```
+
+# Problems That Other Blog Posts Couldn't Solve
+
+There was a problem. Most blog posts I found only dealt with a single namespace. In the company project, the folder structure was divided by feature, and translation files were also managed per feature — so I needed a setup that could handle this.
+
+```jsx
+📦src
+┣ 📂common
+┃ ┣ 📂locale // src/common/locale...
+┃ ┃ ┣ 📜i18n.json
+┃ ┃ ┣ 📜settingi18n.ts
+┃ ┃ ┣ 📜translation.en.json
+┃ ┃ ┣ 📜translation.ja.json
+┃ ┃ ┗ 📜translation.ko.json
+┣ 📂features
+┃ ┣ 📂feature1 // src/features/feature1/locale...
+┃ ┃ ┣ 📂components
+┃ ┃ ┣ 📂layout
+┃ ┃ ┣ 📂locale
+┃ ┃ ┃ ┣ 📜feature1.en.json
+┃ ┃ ┃ ┗ 📜feature1.ko.json
+┃ ┣ 📂feature2 // src/features/feature2/locale...
+┃ ┃ ┣ 📂components
+┃ ┃ ┣ 📂layout
+┃ ┃ ┣ 📂locale
+┃ ┃ ┃ ┣ 📜feature2.en.json
+┃ ┃ ┃ ┗ 📜feature2.ko.json
+//...
+```
+
+As shown in the folder structure above, I needed to scan each folder (common, feature1, feature2, ...) for translation keys, then generate JSON files named after each folder.
+
+I also needed to flatten nested key structures.
+
+For example:
+
+```jsx
+{
+	"key1" : {
+		"key2" : {
+			"key3: "value",
+			//...
+		}
+	}
+}
+```
+
+```jsx
+// someComponent.tsx
+function someComponent() {
+  const { t } = useTranslation();
+
+  return <div>{t('key1.key2.key3')}</div>;
+}
+```
+
+Keys referenced as `key1.key2.key3` needed to be reorganized so that only `key3` was referenced directly.
+
+### Requirements
+
+1. Scan and collect active translation keys: For each feature folder and the common folder, scan only the translation keys actually used within that folder.
+2. Generate translation files per folder: Create JSON files named after each folder and place them in the corresponding `locale` directory.
+3. Flatten nested keys: Once all active keys are collected, traverse both the JSON files and the codebase to flatten nested keys and apply the changes to both.
+
+However, I couldn't find any blog posts that addressed this kind of setup. Most posts simply shared their script code without explanation, making it difficult to figure out an approach from blog posts alone.
+
+# Solution: Namespaces
+
+To find a solution for this situation, I looked into the official i18next documentation.
+
+[Namespaces](https://www.i18next.com/principles/namespaces)
+
+I mentioned namespaces briefly earlier. Here's how the official i18next documentation describes them:
+
+> Namespaces are a feature in i18next internationalization framework which allows you to separate translations that get loaded into multiple files.
+
+I used this namespace feature to take the folder name during code scanning, assign it as the namespace, and generate a JSON file in the corresponding namespace folder.
+
+## Example Code
+
+### Namespaces in i18next
+
+The documentation gives the following example of how to use namespaces.
+
+First, here's how to split translation files (JSON) by namespace:
+
+```jsx
+common.json -> things reused in many places, e.g. Button labels 'save', 'cancel'
+validation.json -> all validation message texts
+glossary.json -> words you want to reuse consistently throughout the text
+```
+
+It also gives guidance on how to decide which namespaces to create:
+
+- Namespace per view/page
+- Namespace per application section/feature set
+- Namespace per lazily loaded module
+
+In the i18next configuration file, you can set up namespaces like this:
+
+```jsx
+i18next.init(
+  {
+    ns: ['common', 'moduleA', 'moduleB'], // namespaces to use
+    defaultNS: 'moduleA', // default namespace
+  },
+  (err, t) => {
+    i18next.t('myKey'); // fetches translation from the default namespace 'moduleA'
+    i18next.t('myKey', { ns: 'common' }); // fetches translation from the 'common' namespace
+  }
+);
+```
+
+Let's now look at the actual implementation to see how this namespace approach is put into practice.
+
+# Implementing the Automation
+
+## Requirements and Tools
+
+### Features
+
+The automation I implemented covers three main functions:
+
+1. Scan: Scan translation keys used in the code and organize them into JSON files per folder.
+2. Upload: Upload the generated JSON files to Google Spreadsheets.
+3. Download: Fetch content from Google Spreadsheets and apply it back to the JSON files.
+
+### Tools Used
+
+- i18next-scanner: A library that scans code, extracts translation keys/values, and merges them into i18n resource files.
+- google-spreadsheet: A Google Sheets API library for JavaScript/TypeScript.
+- fs module: Node's built-in filesystem module for reading and writing files.
+- path module: A module for manipulating folder and file paths.
+
+### Scripts
+
+Each function is exposed as a script in `package.json` like this:
+
+```jsx
+// package.json
+{
+		// Scan translation keys used in the code and apply them to JSON files
+		"scan:i18n": "i18next-scanner --config src/translation/i18next-scanner.config.js",
+		// Fetch content from Google Spreadsheets and apply to JSON files
+		"download:i18n": "node src/translation/download.js",
+		// Apply JSON content to Google Spreadsheets
+		"upload:i18n": "node src/translation/upload.js"
+}
+```
+
+## Scanning Active Translation Keys: i18next-scanner
+
+Let me walk through the final implementation. The available options for i18next-scanner are documented in the official GitHub repository below — feel free to use that as a reference and tailor the configuration to your own needs. My code is just for reference.
+
+[https://github.com/i18next/i18next-scanner#default-options](https://github.com/i18next/i18next-scanner#default-options)
+
+```jsx
+// src/translation/i18next-scanner.config.js
+const path = require('path');
+
+const COMMON_EXTENSIONS = '/**/*.{js,jsx,ts,tsx,vue,html}';
+
+const translationKo = require('../common/locale/translation.ko.json');
+const translationEn = require('../common/locale/translation.en.json');
+const translationJa = require('../common/locale/translation.ja.json');
+
+const homeKo = require('../features/home/locale/home.ko.json');
+const homeEn = require('../features/home/locale/home.en.json');
+
+const controlKo = require('../features/control/locale/control.ko.json');
+const controlEn = require('../features/control/locale/control.en.json');
+
+// Translation files referenced by the control and home feature folders
+const featureTrans = {
+  home: {
+    ko: homeKo,
+    en: homeEn,
+  },
+  control: {
+    ko: controlKo,
+    en: controlEn,
+  },
+};
+
+// Translation files referenced by everything except control and home
+const commonTrans = {
+  ko: translationKo,
+  en: translationEn,
+  ja: translationJa,
+};
+
+module.exports = {
+  // Specify paths to scan
+  input: [
+    // Paths to include
+    `./src/features/${COMMON_EXTENSIONS}`,
+
+    // Paths to exclude
+    `!./src/features/notification/${COMMON_EXTENSIONS}`,
+    `!./src/features/agent/${COMMON_EXTENSIONS}`,
+    `!./src/features/statistics/${COMMON_EXTENSIONS}`,
+  ],
+
+  options: {
+    // Default language used when checking default values
+    defaultLng: 'ko',
+    // Languages in use
+    lngs: ['ko', 'en'],
+    func: {
+      // Target functions to scan
+      list: ['t'],
+      // File extensions to scan
+      extensions: ['.js', '.jsx', '.ts', '.tsx'],
+    },
+
+    resource: {
+      loadPath: 'src/features/{{ns}}/locales/{{ns}}.{{lng}}.json',
+      savePath: 'src/features/{{ns}}/locales/{{ns}}.{{lng}}.json',
+    },
+
+    // List of namespaces to use
+    ns: [
+      'control',
+      'eum',
+      'home',
+      'license',
+      'project',
+      'setting',
+      'signin',
+      'usage',
+      'vwr',
+    ],
+
+    // Logic for determining the value assigned to each key
+    defaultValue(lng, ns, key) {
+      const separator = '.';
+      const [a, b, c, d, e] = key.split(separator); // Handle cases where nested keys are used
+
+      let value;
+
+      // Branch logic for control and home folders, which reference different translation files
+      if (['control', 'home'].includes(ns)) {
+        if (c && !d) {
+          value =
+            featureTrans[ns][lng][a] &&
+            featureTrans[ns][lng][a][b] &&
+            featureTrans[ns][lng][a][b][c]
+              ? featureTrans[ns][lng][a][b][c]
+              : commonTrans[lng][a][b][c];
+        } else if (b && !c) {
+          value =
+            featureTrans[ns][lng][a] && featureTrans[ns][lng][a][b]
+              ? featureTrans[ns][lng][a][b]
+              : commonTrans[lng][a][b];
+        } else if (a && !b) {
+          value = featureTrans[ns][lng][a]
+            ? featureTrans[ns][lng][a]
+            : commonTrans[lng][a];
+        }
+      } else {
+        if (e) {
+          value = commonTrans[lng][a][b][c][d][e];
+        } else if (d && !e) {
+          value = commonTrans[lng][a][b][c][d];
+        } else if (c && !d) {
+          value = commonTrans[lng][a][b][c];
+        } else if (b && !c) {
+          value = commonTrans[lng][a][b];
+        } else {
+          value = commonTrans[lng][a];
+        }
+      }
+
+      return value;
+    },
+    keySeparator: false,
+    nsSeparator: false,
+    prefix: '%{',
+    suffix: '}',
+  },
+
+  // Logic for assigning a namespace based on the folder name of the file being scanned
+  transform: function customTransform(file, enc, done) {
+    const { parser } = this;
+    // Get the folder name
+    const featureName = file.path.split(path.sep).slice(-3, -2)[0];
+
+    parser.parseFuncFromString(
+      file.contents.toString(enc),
+      { list: ['t'] },
+      (key, options) => {
+        // Pass the folder name as the namespace
+        parser.set(key, { ...options, ns: featureName });
+      }
+    );
+
+    done();
+  },
+};
+```
+
+The `defaultValue` option defines the logic for assigning a value to each translation key, and the `transform` option defines a function for assigning the namespace based on each folder.
+
+- `defaultValue`: An option that specifies the default value to use when no value is passed to `parser.set`.
+- `transform`: An option that lets you define a custom function for processing scanned files — you can control how the scanner reads and interprets the code to extract translation keys.
+
+Looking back at this while writing the post, I think all the logic could actually be handled entirely within the `transform` option.
+
+## Integrating with Google Spreadsheets
+
+Now that all the translation keys in the codebase are organized, it's time to upload the JSON file contents to Google Spreadsheets.
+
+As mentioned earlier, translation files are managed per feature, so the Google Spreadsheet also needed a separate sheet for each namespace.
+
+To handle this, I created sheets for each namespace in advance and wrote code to upload and download each translation file using the corresponding sheet's `sheetId`.
+
+### Setup for Using the Google Spreadsheet API
+
+To use the Google API, you first need to configure it in Google Cloud Platform. There are many blog posts that explain this process well — follow the link below to obtain a private key JSON file, and the basic setup is done!
+
+[https://sojinhwan0207.tistory.com/200](https://sojinhwan0207.tistory.com/200)
+
+You'll use that key to authenticate when calling the Google Spreadsheet API.
+
+### Shared Configuration File: index.js
+
+Values and logic shared between `upload.js` and `download.js` are written in `index.js` and used as a common module.
+
+```jsx
+// src/translation/index.js
+const fs = require('fs');
+const path = require('path');
+const { GoogleSpreadsheet } = require('google-spreadsheet');
+const { JWT } = require('google-auth-library'); // Google authentication library
+
+// Location of the key file obtained from Google Cloud Platform
+const creds = require('./.credentials/~.json');
+
+// Spreadsheet ID
+const spreadsheetDocId = '...';
+const ns = [
+  'control',
+  'eum',
+  'home',
+  'license',
+  'project',
+  'setting',
+  'signin',
+  'usage',
+  'vwr',
+  'common',
+  'agent',
+  'statistics',
+];
+const lngs = ['en', 'ko', 'ja'];
+
+// Values used to construct paths for scanning or downloading
+const srcPath = './src';
+const featuresPath = path.join(srcPath, 'features');
+const commonPath = path.join(srcPath, 'common');
+
+// Sheet IDs for each namespace
+const sheetIdForNamespaces = {
+  agent: 0,
+  control: 1417978718,
+  eum: 1133616245,
+  home: 1089626816,
+  license: 979596039,
+  notification: 1130312388,
+  project: 1297171255,
+  setting: 2072120756,
+  signin: 1666983927,
+  statistics: 1713887317,
+  usage: 1701897416,
+  vwr: 265110534,
+  plan: 459633795,
+  common: 1476533780,
+};
+
+// Pre-load all locale file paths to iterate over later
+const localePathForNamespaces = getAllLocalePaths();
+
+// Google API authentication
+const serviceAccountAuth = new JWT({
+  email: creds.client_email,
+  key: creds.private_key,
+  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+});
+
+async function loadSpreadsheet() {
+  console.info(
+    '[32m',
+    '=====================================================================================================================\n',
+    '# i18next auto-sync using Spreadsheet\n\n',
+    '  * Download translation resources from Spreadsheet and make /src/locales//.json\n',
+    '  * Upload translation resources to Spreadsheet.\n\n',
+    `The Spreadsheet for translation is here ([34mhttps://docs.google.com/spreadsheets/d/${spreadsheetDocId}/#gid=0[0m)\n`,
+    '=====================================================================================================================',
+    '[0m'
+  );
+
+  const doc = new GoogleSpreadsheet(spreadsheetDocId, serviceAccountAuth);
+
+  await doc.loadInfo();
+
+  return doc;
+}
+
+function getAllLocalePaths() {
+  const localePathForNamespaces = {};
+
+  localePathForNamespaces.common = path.join(commonPath, 'locale');
+
+  const features = fs
+    .readdirSync(featuresPath, { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory())
+    .map((dirent) => dirent.name);
+
+  features.forEach((featureDir) => {
+    const localePath = path.join(featuresPath, featureDir, 'locale');
+    const fearueName = featureDir.split('/')[0];
+    if (fs.existsSync(localePath) && fs.lstatSync(localePath).isDirectory()) {
+      localePathForNamespaces[`${fearueName}`] = localePath;
+    }
+  });
+
+  return localePathForNamespaces;
+}
+
+module.exports = {
+  loadSpreadsheet,
+  getAllLocalePaths,
+  localePathForNamespaces,
+  sheetIdForNamespaces,
+  ns,
+  lngs,
+  columnKeyToHeader,
+};
+```
+
+### Uploading JSON Files to Google Spreadsheets: upload.js
+
+This script uses the built-in `fs` and `path` modules, so reading through it carefully shouldn't be too difficult. Feel free to adapt the code to your own project's needs. For how to interact with Google Spreadsheets, I referred to the official documentation.
+
+[https://github.com/theoephraim/node-google-spreadsheet](https://github.com/theoephraim/node-google-spreadsheet)
+
+In my case, the `google-spreadsheet` methods had been updated compared to the blog posts I referenced, so I had to rely on the official docs. I strongly recommend consulting the official documentation!
+
+```jsx
+// src/translation/upload.js
+const fs = require('fs');
+const path = require('path');
+const {
+  lngs,
+  loadSpreadsheet,
+  ns,
+  localePathForNamespaces,
+  sheetIdForNamespaces,
+  headerValues,
+} = require('./index');
+
+// Function to add a new sheet if one doesn't exist
+async function addNewSheet(doc, title, sheetId) {
+  const sheet = await doc.addSheet({
+    sheetId,
+    title,
+    headerValues,
+  });
+
+  return sheet;
+}
+
+// Function to transform JSON content into the format expected by google-spreadsheet
+function getRowsFromJson(object) {
+  const rowsFromJson = {}; // [key] : {key: string, ko: string, en:string }
+
+  for (const [lng, obj] of Object.entries(object)) {
+    for (const [key, val] of Object.entries(obj)) {
+      rowsFromJson[key] = rowsFromJson[key]
+        ? { ...rowsFromJson[key], [lng]: val }
+        : { key: key, [lng]: val };
+    }
+  }
+
+  return rowsFromJson;
+}
+
+// Function to check if a JSON key already exists in the sheet
+function isExistInSheet(rows, key) {
+  let answer;
+  for (const row of rows) {
+    if (row.get('key') === key) return true;
+  }
+  return answer;
+}
+
+// Function to find the row index of a given key in the sheet
+function getIdxOfKey(rows, key) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (row.get('key') === key) return i;
+  }
+}
+
+// Function to update sheet data based on JSON content
+async function updateSheetFromJson(doc, object, sheetId) {
+  const rowsFromJson = Object.values(getRowsFromJson(object)); // [ {key: string, ko: string, en:string }, ... ]
+
+  let sheet = doc.sheetsById[sheetId];
+
+  if (!sheet) {
+    sheet = await addNewSheet(doc, title, sheetId);
+  }
+
+  const rows = await sheet.getRows();
+
+  for (const rowFromJson of rowsFromJson) {
+    const key = rowFromJson.key;
+
+    if (isExistInSheet(rows, key)) {
+      const idx = getIdxOfKey(rows, key);
+      rows[idx].assign(rowFromJson);
+      await rows[idx].save();
+    } else {
+      await sheet.addRow(rowFromJson);
+    }
+  }
+}
+
+// Function to read JSON files given the locale path for each namespace
+function getJsonFilesForEachNamespace(localePath) {
+  const localeJsons = {};
+
+  const localefiles = fs.readdirSync(localePath);
+  for (const localefile of localefiles) {
+    if (!ns.includes(localefile.split('.')[0])) continue;
+
+    const [namespace, lng] = localefile.split('.');
+
+    const localeFilePath = path.join(localePath, localefile);
+    const fileContents = fs.readFileSync(localeFilePath, 'utf8');
+    const json = JSON.parse(fileContents);
+
+    localeJsons[lng] = json;
+  }
+
+  return localeJsons;
+}
+
+// Function to aggregate JSON contents from all languages into a single object
+async function getRowsForNamespaceFromJson(localePath) {
+  /**
+   * lngMap = { [lng] : { key : value }, ... }
+   */
+  const lngMap = new Map();
+  lngs.forEach((lng) => lngMap.set(lng, {}));
+
+  const jsons = getJsonFilesForEachNamespace(localePath);
+
+  for (const [lng, json] of Object.entries(jsons)) {
+    for (const [key, val] of Object.entries(json)) {
+      lngMap.get(lng)[key] = val;
+    }
+  }
+
+  return lngMap;
+}
+
+async function main() {
+  const doc = await loadSpreadsheet();
+
+  // Iterate over each namespace: read files and update the corresponding sheet
+  for (const [namespace, localePath] of Object.entries(
+    localePathForNamespaces
+  )) {
+    if (namespace === 'plan') continue;
+
+    console.log('namespace :', namespace);
+    console.log('localePath :', localePath);
+
+    const sheetId = sheetIdForNamespaces[namespace];
+    const lngMap = await getRowsForNamespaceFromJson(localePath);
+    const object = Object.fromEntries(lngMap);
+
+    await updateSheetFromJson(doc, object, sheetId);
+
+    console.log('done!');
+    console.log();
+  }
+}
+
+main();
+```
+
+### Downloading Google Spreadsheet Content to JSON Files: download.js
+
+The download logic is similar to the upload logic — it's essentially the reverse of what we did above. I'd recommend adapting it to your own project's needs. Once you've finished the upload logic, the download part should come together quickly!
+
+```jsx
+// src/translation/download.js
+const fs = require('fs');
+const path = require('path');
+const {
+  lngs,
+  loadSpreadsheet,
+  ns,
+  localePathForNamespaces,
+  sheetIdForNamespaces,
+} = require('./index');
+
+// Function to read JSON files given the locale path for each namespace
+function getJsonFilesForEachNamespace(localePath) {
+  const localeJsons = {};
+
+  const localefiles = fs.readdirSync(localePath);
+
+  for (const localefile of localefiles) {
+    if (!ns.includes(localefile.split('.')[0])) continue;
+
+    const [namespace, lng] = localefile.split('.');
+
+    const localeFilePath = path.join(localePath, localefile);
+    const fileContents = fs.readFileSync(localeFilePath, 'utf8');
+    const json = JSON.parse(fileContents);
+
+    localeJsons[lng] = json;
+  }
+
+  return localeJsons;
+}
+
+// Function to rewrite JSON files to the local path for each translation file
+async function rewriteJsonToLocalPath(object, localePath, namespace) {
+  lngs.forEach((lng) => {
+    const localeFilePath = path.join(localePath, `${namespace}.${lng}.json`);
+    const jsonString = JSON.stringify(object[lng], null, 2);
+
+    fs.writeFileSync(localeFilePath, jsonString, 'utf8', (err) => {
+      if (err) throw err;
+    });
+  });
+}
+
+// Function to build a single object from a namespace's Google Spreadsheet
+async function getLngMapForNamespaceFromSheet(doc, sheetId, localePath) {
+  /**
+   * lngMap = { [lng] : { key : value }, ... }
+   */
+  const lngMap = new Map();
+  lngs.forEach((lng) => lngMap.set(lng, {}));
+
+  const jsons = getJsonFilesForEachNamespace(localePath);
+
+  const sheet = doc.sheetsById[sheetId];
+  if (!sheet) return {};
+
+  const rows = await sheet.getRows();
+
+  rows.forEach((row) => {
+    const key = row.get('key');
+
+    lngs.forEach((lng) => {
+      let value = row.get(`${lng}`);
+      if (value) value = value.replace(/\\n/g, '\n');
+      lngMap.set(lng, { ...lngMap.get(lng), [key]: value || '' });
+    });
+  });
+
+  for (const [lng, json] of Object.entries(jsons)) {
+    for (const [key, val] of Object.entries(json)) {
+      lngMap.get(lng)[key] = lngMap.get(lng)[key] || val;
+    }
+  }
+
+  return lngMap;
+}
+
+async function main() {
+  const doc = await loadSpreadsheet();
+
+  // Iterate over each namespace: read the sheet and write the corresponding files
+  for (const [namespace, sheetId] of Object.entries(sheetIdForNamespaces)) {
+    if (namespace === 'plan') continue;
+
+    console.log('namespace :', namespace);
+
+    const localePath = localePathForNamespaces[namespace];
+    const lngMap = await getLngMapForNamespaceFromSheet(
+      doc,
+      sheetId,
+      localePath
+    );
+    const object = Object.fromEntries(lngMap);
+
+    await rewriteJsonToLocalPath(object, localePath, namespace);
+
+    console.log('done!');
+    console.log();
+  }
+}
+
+main();
+```
+
+# Wrapping Up
+
+For the scan step, each folder was processed in under a second — an enormous efficiency gain. Working with large codebases in a real-world setting means there will likely be more occasions to write scripts like this, and this project gave me a great opportunity to work hands-on with the `fs` and `path` modules.
+
+I was genuinely impressed by how much a well-written script can accomplish, and it reinforced my belief that knowing how to use the right tools is essential for staying efficient on any task. Work smart, not hard!

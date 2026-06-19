@@ -1,0 +1,623 @@
+---
+title: "Hanghaen Plus Frontend Cohort 6 – Week 3: Implementing React Built-in Hooks from Scratch (feat. Best Practice Award)"
+description: "A retrospective on what I learned and the troubleshooting process while implementing React built-in hooks like useState and useRef from scratch."
+date: "2025-07-28"
+category: "회고"
+tags: ["항해플러스"]
+featured: true
+---
+
+![](/images/tistory/hanghaePlus-week3-react-hooks/ed55da88ff68.jpg)
+
+ 
+
+![](/images/tistory/hanghaePlus-week3-react-hooks/3e38616eb0c5.png)
+
+ 
+
+ 
+
+ 
+
+ 
+
+Week 3's assignment was quite manageable. So I documented the process in detail as I worked through it, and whenever I ran into an unfamiliar concept, I took the time to dig into it deeply. Here I'll record both the new things I learned this week and the hard-fought troubleshooting sessions.
+
+##  
+
+## Topic and Goals
+
+ 
+
+The theme for Week 3 was "React, Beyond the Basics." True to its name, the goal was to go beyond React's basic principles and implement React's built-in hooks — such as comparison functions, useRef, useMemo — and higher-order components like memo, from scratch.
+
+Key implementation items:
+
+- **Comparison functions:** shallowEquals, deepEquals
+
+- **React built-in hooks:** useRef, useMemo, useCallback, useDeepMemo, useShallowState, useAutoCallback
+
+- **HOCs:** memo, deepMemo
+
+- **Advanced hooks:** useStore, useShallowSelector, useSyncExternalStore-based observer, useRouter, useStorage
+
+- **Context API improvements:** ToastContext, ModalContext
+
+Compared to Week 1's overwhelming volume of work and Week 2's concepts I never fully grasped, this assignment had clear, well-defined tasks — and there was a satisfying sense of progress as I tackled each mission one by one.
+
+##  
+
+## Technical Takeaways
+
+###  
+
+### 1. **How React Actually Manages Hooks**
+
+ 
+
+React manages hooks based on a state array (Linked List) and an index. Understanding this finally made clear to me why you can't call hooks inside conditionals or loops.
+
+####  
+
+#### 1) Hook State Storage Structure
+
+```
+`let hooks = [];
+let currentHookIndex = 0;
+`
+```
+
+`hooks` is an array that stores the state of all hooks for the component instance currently being rendered. States are stored according to the order (index) in which hooks are called, and that order is preserved across re-renders. Even when a new render occurs, the existing state is reused, and hooks are accessed sequentially starting from `currentHookIndex = 0`.
+
+`currentHookIndex` is an index indicating which hook is currently being executed during rendering. Each hook call uses `hooks[currentHookIndex]`, and after the hook call finishes, `currentHookIndex++` advances to the next hook.
+
+####  
+
+#### 2) Example of Hook State Storage
+
+ 
+
+If a component looks like this:
+
+```
+`function MyComponent() {
+  const [count, setCount] = useState(0); // first hook
+  const [text, setText] = useState("Hi"); // second hook
+  const ref = useRef(null); // third hook
+}
+`
+```
+
+ 
+
+When React renders this component, it builds the `hooks[]` array like this:
+
+```
+`hooks = [
+  0, // hooks[0] = state of count
+  "Hi", // hooks[1] = state of text
+  { current: null }, // hooks[2] = state of ref
+];
+`
+```
+
+###  
+
+### 2. **Why Hook Call Order Matters**
+
+ 
+
+Because React stores and retrieves each component's state by rendering "order (index)", if the order of hook calls changes, it will retrieve completely wrong state.
+
+####  
+
+#### **Example of Hook Order Getting Scrambled**
+
+If you call a hook inside a conditional like this:
+
+```
+`// Violating the rules of hooks — inside a conditional or loop
+if (condition) {
+  const [a, setA] = useState(0); // ❌ Hook is inside a conditional
+}
+const [b, setB] = useState(0);
+`
+```
+
+ 
+
+On the first render when `condition === true`:
+
+```
+`hooks[0] = 0; // a
+hooks[1] = 1; // b
+`
+```
+
+ 
+
+On the second render when `condition === false`:
+
+```
+`// The first useState call is skipped!
+hooks[0] = 1; // intended to be b, but overwrites a's slot → order is broken
+`
+```
+
+ 
+
+When `condition` flips from true to false, `b` overwrites `a`'s slot. Because React retrieves state based on order, changing the hook order corrupts the internal state.
+
+##  
+
+### 3. **The Difference Between Shallow and Deep Comparison**
+
+####  
+
+#### 1) Shallow Comparison
+
+Compares only up to the first level of properties in an object. Reference types are compared by reference value, while primitives are compared by value.
+
+####  
+
+#### 2) Deep Comparison
+
+Recursively compares all nested properties of an object.
+
+####  
+
+#### 3) **Why Does React Use Shallow Comparison?**
+
+ 
+
+React uses shallow comparison in most cases for **performance optimization**. For example, React.memo, useMemo, useCallback, and useEffect all use shallow comparison on dependency arrays and props to decide whether to re-render.
+
+- It's fast
+
+- Since immutability is generally maintained, shallow comparison is sufficient for detecting changes
+
+##  
+
+### 4. **The Role of Object.is**
+
+####  
+
+#### 1) What is Object.is
+
+```
+`Object.is(value1, value2);
+`
+```
+
+ 
+
+It determines whether two values are **exactly** the same, and behaves differently from `===` in the case of `+0` vs `-0` and `NaN` vs `NaN`.
+
+```
+`+0 === -0 // true
+Object.is(+0, -0) // false ✅
+
+NaN === NaN // false
+Object.is(NaN, NaN) // true ✅
+`
+```
+
+ 
+
+####  
+
+#### 2) Why It's Used in React
+
+When deciding whether to re-render by comparing props or dependency arrays, using `===` can incorrectly flag a change for cases like `NaN` or `+0`/`-0`, even though the value hasn't actually changed.
+
+Because `Object.is` handles these edge cases correctly, it **prevents unnecessary re-renders** and enables **predictable rendering**.
+
+####  
+
+#### 3) Object.is Browser Compatibility
+
+`Object.is()` was introduced in ES6 (ECMAScript 2015), so it may not be supported in **older browsers**. To ensure the same behavior in older environments, you can create and use a polyfill.
+
+```
+`// Fallback function for environments without Object.is (polyfill)
+function is(x, y) {
+  if (x === y) {
+    // Distinguish +0 from -0
+    return x !== 0 || 1 / x === 1 / y;
+  }
+  // Compare NaN with NaN
+  return x !== x && y !== y;
+}
+
+// Example of applying the polyfill
+if (!Object.is) {
+  Object.is = function (x, y) {
+    if (x === y) {
+      return x !== 0 || 1 / x === 1 / y;
+    }
+    return x !== x && y !== y;
+  };
+}
+`
+```
+
+##  
+
+### 5. **useSyncExternalStore**
+
+At first this was an unfamiliar hook, but I came to understand that it internally combines `subscribe`, `getSnapshot`, and `getServerSnapshot` to **fetch external state before rendering** and to **prevent server/client state mismatches**.
+
+I was especially able to understand in depth why this hook is necessary when considering Concurrent Mode and SSR.
+
+####  
+
+#### 1) The Old Approach
+
+The most common pattern for subscribing to state outside of React is:
+
+```
+`const [state, setState] = useState(store.getState());
+
+useEffect(() => {
+  const unsubscribe = store.subscribe(() => {
+    setState(store.getState());
+  });
+  return unsubscribe;
+}, []);
+`
+```
+
+This approach has a fundamental problem.
+
+- Because `useEffect` runs after rendering, the timing of rendering and external state changes can fall out of sync.
+
+- That is, the component renders based on a stale value even though the external state has already changed → causing flickering or inconsistency.
+
+- This problem can cause bugs more frequently in **React 18's Concurrent Mode (where rendering can be suspended and resumed)**.
+
+- In SSR environments, `useEffect` doesn't run at all, which causes hydration mismatch issues.
+
+###  
+
+#### 2) **The Problem useSyncExternalStore Solves in Concurrent Mode**
+
+Starting with React 18, there are situations where **rendering doesn't have to happen synchronously**. In other words, instead of painting the entire screen at once, React can **paint a bit, pause, and resume later**, or **paint more important UI first and fill in the slower parts afterward**.
+
+For example, if there's a slow component, React can hold it back:
+
+```
+`<Suspense fallback={<Loading />}>
+  <SlowComponent />
+</Suspense>
+`
+```
+
+When React encounters a Promise (suspense) while trying to render `<SlowComponent />`, it suspends or defers the rendering. This allows React to show important buttons first while replacing slow-to-render components with a loading state.
+
+During this suspension, user actions, WebSocket messages, server polling, or other events can change the store's state. React hasn't painted the screen yet, but the external state has already changed!
+
+> 
+So what's the problem here?
+
+ 
+
+When rendering resumes, it continues from the "stale state it started with." That is, **React's rendered output and the actual state become inconsistent**!!!
+
+ 
+
+To summarize the sequence:
+
+1. A component begins rendering.
+
+1. React suspends or delays this rendering.
+
+1. Meanwhile, the external state (store) changes.
+
+1. Rendering resumes... but this render was started based on the previous state!
+
+→ A rendering inconsistency bug occurs where the DOM is painted based on stale state!
+
+> 
+**So how does useSyncExternalStore solve this?**
+
+1. **When rendering begins** → calls `getSnapshot()` immediately to capture the latest state
+
+1. **If the external state changes during rendering** → that render is invalidated → rendering starts over
+
+In other words, it acts as a safety net that prevents rendering with stale state before it happens.
+
+##  
+
+## Challenges and Reflections
+
+###  
+
+### 1. **useMemo — The Global Variable Trap and Memoization Failure**
+
+####  
+
+#### ❌ Using a function-scoped variable in useMemo
+
+ 
+
+When I first implemented `useMemo`, the value was being recalculated on every render. I tried creating a `hasMemoMounted` variable to check whether it was the first render, but since this variable lives inside the function, it always reset to `false` on each render — meaning `factory()` was always executed.
+
+```
+`export function useMemo<T>(factory: () => T, _deps: DependencyList, _equals = shallowEquals): T {
+  let hasMemoMounted = false;
+
+  const memoizedState = useRef<{ value: T; deps: DependencyList } | null>(null);
+
+  if (!hasMemoMounted) {
+    hasMemoMounted = true;
+    memoizedState.current = {
+      value: factory(),
+      deps: _deps,
+    };
+
+    return memoizedState.current.value as T;
+  }
+
+  const compareFunc = _equals || shallowEquals;
+
+  if (!memoizedState.current || !compareFunc(memoizedState.current.deps, _deps)) {
+    memoizedState.current = {
+      value: factory(),
+      deps: _deps,
+    };
+  }
+
+  return memoizedState.current.value as T;
+}
+`
+```
+
+####  
+
+#### ❌ Using a module-level global variable in useMemo
+
+ 
+
+What if I moved it to the global scope? That caused a different problem. All components share the same `hasMemoMounted` value, so **one component's render state affected other components — a cross-component contamination bug**.
+
+```
+`let hasMemoMounted = false;
+
+export function useMemo<T>(factory: () => T, _deps: DependencyList, _equals = shallowEquals): T {
+  const memoizedState = useRef<{ value: T; deps: DependencyList } | null>(null);
+
+  if (!hasMemoMounted) {
+    hasMemoMounted = true;
+    memoizedState.current = {
+      value: factory(),
+      deps: _deps,
+    };
+
+    return memoizedState.current.value as T;
+  }
+
+  const compareFunc = _equals || shallowEquals;
+
+  if (!memoizedState.current || !compareFunc(memoizedState.current.deps, _deps)) {
+    memoizedState.current = {
+      value: factory(),
+      deps: _deps,
+    };
+  }
+
+  return memoizedState.current.value as T;
+}
+`
+```
+
+####  
+
+#### ✅ Storing state per render context
+
+ 
+
+In the end, just as React maintains a separate state store for each component instance, I switched to **using `useRef` to store state per render context**.
+
+```
+`export function useMemo<T>(factory: () => T, _deps: DependencyList, _equals = shallowEquals): T {
+  // deps and value have a 1:1 correspondence
+  const memoizedState = useRef<{ value: T; deps: DependencyList } | null>(null);
+
+  const compareFunc = _equals || shallowEquals;
+
+  // On initial render, set the initial value; when deps change, compute a new value
+  if (!memoizedState.current || !compareFunc(memoizedState.current.deps, _deps)) {
+    memoizedState.current = {
+      value: factory(),
+      deps: _deps,
+    };
+  }
+
+  // When deps haven't changed, return the previous value
+  return memoizedState.current.value;
+}
+`
+```
+
+##  
+
+### 2. **useAutoCallback — Keeping a Stable Reference While Always Reading Fresh Values?**
+
+This was one of the trickiest implementations in this assignment. The requirement was:
+
+> 
+"The reference must not change, yet it must always access the latest state and props."
+
+####  
+
+#### 1) Why is this pattern needed?
+
+Normally, `useCallback` with an empty dependency array keeps the function reference stable, but the values used inside are frozen at "creation time" (the closure problem). The callback captures stale state or props, leading to unintended behavior when the latest values are needed.
+
+```
+`// Since the dependency array is empty, handleAlert only remembers count from the initial render
+const handleAlert = useCallback(() => {
+  alert(`Current count: ${count}`);
+}, []);
+`
+```
+
+ 
+
+When you always need to reference the latest state inside a `setInterval`, event handler, or callback passed to an external library, `useCallback` alone cannot solve this problem.
+
+####  
+
+#### ❌ Storing the function in useRef
+
+ 
+
+My first attempt was to simply store the function in a `useRef` and return it.
+
+```
+`export const useAutoCallback = <T extends AnyFunction>(fn: T): T => {
+  // Always returns the same function reference
+  const stableCallback = useRef((...args: any[]) => {
+    // Calling fn(...args) here creates a closure
+    // Even if we receive an fn that reads the latest state/props, only the initial fn is used
+    return fn(...args);
+  });
+
+  return stableCallback.current as T;
+};
+`
+```
+
+ 
+
+But this approach **permanently references the fn captured at initialization**, so even if the value captured in the closure changes, it isn't reflected. In other words, `console.log(count)` inside would keep printing the **stale count**.
+
+####  
+
+#### ✅ Storing the latest fn in useRef
+
+ 
+
+I realized I needed to keep tracking the latest `fn`, and rewrote it like this:
+
+```
+`export const useAutoCallback = <T extends AnyFunction>(fn: T): T => {
+  const fnRef = useRef(fn);
+  fnRef.current = fn; // Always sync to the latest fn immediately
+
+  // Always returns the same function reference
+  const stableCallback = useRef((...args: unknown[]) => {
+    return fnRef.current(...args);
+  });
+
+  return stableCallback.current as T;
+};
+`
+```
+
+ 
+
+Because `fnRef.current` inside always points to the latest `fn`, the callback always has access to the latest state and props.
+
+#  
+
+## Key Insight
+
+Many people see `useMemo`, `useCallback`, and `React.memo` and think "it's a performance optimization, so I should use it everywhere!" — but in reality, **the key is not using them unconditionally, but using them only when needed**.
+
+####  
+
+#### 1) The Essence of Memoization
+
+> 
+**Memoization is an optimization technique that remembers the result of a computation so that when the same input appears again, it returns the stored value instead of recalculating.**
+
+ 
+
+In other words, it's a tool for **reducing expensive computations** — not a blanket tool to prevent all re-renders.
+
+####  
+
+#### **✅ When memoization is effective**
+
+- When re-renders happen frequently even though props or state rarely change
+
+- For computationally expensive functions (O(n²), recursion, sorting, filtering, etc.)
+
+- When child components are re-rendering unnecessarily
+
+```
+`const filteredItems = useMemo(() => {
+  return items.filter((item) => expensiveCheck(item));
+}, [items]);
+`
+```
+
+ 
+
+In cases like this, if `items` hasn't changed, there's no need to run `filter()` again — **so `useMemo` is justified to reduce computation cost.**
+
+####  
+
+#### **❌ Example of unnecessary memoization**
+
+```
+`function Parent() {
+  const [count, setCount] = useState(0);
+
+  const handleClick = useCallback(() => {
+    console.log("clicked");
+  }, []);
+
+  return (
+    <div>
+      <button onClick={() => setCount(count + 1)}>Increase</button>
+      <Child onClick={handleClick} />
+    </div>
+  );
+}
+
+const Child = React.memo(({ onClick }: { onClick: () => void }) => {
+  console.log("Child rendered");
+  return <button onClick={onClick}>Click me</button>;
+});
+`
+```
+
+ 
+
+At a glance this looks like it's well-optimized. But...
+
+- `handleClick` is a **lightweight function** that only does a `console.log()` internally — **memoizing it is unnecessary. It just adds memory overhead.**
+
+- `Child` is wrapped in `React.memo`, so it won't re-render as long as the `onClick` reference doesn't change. Since `onClick` is already wrapped in `useCallback` with an empty dependency array, its reference will never change anyway. So this is unnecessary memoization as well.
+
+####  
+
+#### **✅ When should you use memoization?**
+
+- "Is some computation happening repeatedly or unnecessarily?"
+
+- "Is there a real need to cache this computation?"
+
+- "Does caching this computation actually yield a performance gain?"
+
+Only when you can confidently answer **"yes"** to all of these is memoization genuinely worthwhile. I came to understand that unnecessary memoization can actually **hurt both performance and code quality**.
+
+#  
+
+## Wrapping Up
+
+Through this assignment, implementing React's built-in hooks from scratch gave me a chance to think deeply about what role each hook plays and how it needs to work to satisfy the given requirements.
+
+ 
+
+Going through this process, React stopped feeling like just something you "use" and started feeling like **something whose inner workings you can understand** — and I felt firsthand that even the behaviors I had always taken for granted exist for a reason.
+
+ 
+
+As I wrap up Chapter 1, I can't help but feel like I've grown a little closer to React. There are still countless things ahead to learn and concepts to encounter, but **one thing is certain — I can now look at React with much deeper eyes than before! And I got the Best Practice award too!**
+
+![](/images/tistory/hanghaePlus-week3-react-hooks/951206d90493.png)
+
+            

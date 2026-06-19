@@ -1,0 +1,198 @@
+---
+title: What You Need to Know to Design a RESTful API
+description: Everything you need to design a REST API — REST API concepts, URI naming rules, Path variable vs Query string, and more.
+date: "2023-07-28"
+category: "개발 일반"
+tags: []
+---
+
+> What does a truly RESTful API look like? Were the API servers I've been using actually RESTful?
+
+While working on multiple projects at SSAFY (Samsung Software Academy For Youth), I had been building services with REST APIs as a matter of course. But when I sat down to write an API spec for a personal project, a nagging question crept in — am I doing this right?
+
+Along with wanting to design APIs more properly, I recalled stumbling over a REST API question in a recent job interview and not giving a clear answer. Let me revisit the concept and learn how to design a genuinely RESTful API.
+
+# What Is an API?
+
+Let's start with what an API actually is.
+
+> API — Application Programming Interface
+> An API is a connection between computers or programs. It is a kind of software interface that provides services to other types of software.
+
+![https://img1.daumcdn.net/thumb/R1280x0.fjpg/?fname=http://t1.daumcdn.net/brunch/service/user/8kCc/image/KqPoc0TbVmKlZi1ldFCyfNR0Kao.jpg](https://img1.daumcdn.net/thumb/R1280x0.fjpg/?fname=http://t1.daumcdn.net/brunch/service/user/8kCc/image/KqPoc0TbVmKlZi1ldFCyfNR0Kao.jpg)
+
+Reading through various blog posts, I kept coming across the analogy of an API as a restaurant waiter. An API works similarly to how a waiter takes an order, relays it to the kitchen (the system), and then serves the dish (data) the customer requested. In this process, the waiter can only accept items from the menu (the API specification).
+
+In other words, an API is the contract that governs how information is exchanged between software applications. It allows different pieces of software or services to "talk" to each other, interact, and pass data back and forth.
+
+# Types of APIs
+
+So what kinds of APIs are out there? *(Having only ever worked with REST APIs, I'd never really thought about anything else.)* There's actually a much wider variety than just REST.
+
+### SOAP API
+
+SOAP stands for Simple Object Access Protocol. It uses the Simple Object Access Protocol and exchanges messages in XML. It was widely used in the past but is considered less flexible by today's standards.
+
+### RPC API
+
+Short for Remote Procedure Call. The client invokes a function or procedure on the server, and the server sends the output back to the client.
+
+### WebSocket API
+
+Unlike HTTP-based APIs such as REST, WebSocket provides a full-duplex communication channel over a single TCP connection. It is particularly useful for real-time applications like chat apps and games.
+
+### REST API
+
+The most widely used API on the web today. The client sends a request to the server as data, the server uses that input to trigger internal functions, and returns output data back to the client. (More on this below.)
+
+### GraphQL
+
+An interface that enables on-demand data queries. With a GraphQL API, a user can request everything they need from a backend service through a single API endpoint, which helps reduce unnecessary API calls.
+
+# What Is a REST API?
+
+REST stands for Representational State Transfer. A REST API is an API that follows REST's design principles.
+
+REST was first proposed by Roy Fielding as an architectural style for building network-based applications. The core idea of REST is to treat networked content as resources that can be uniquely identified by a URL.
+
+## REST Design Principles
+
+### 1. Uniform Interface
+
+All requests for the same resource should look the same, regardless of where the request originates.
+
+### 2. Client-Server Decoupling
+
+In REST API design, client and server applications must be completely independent of each other. The only thing the client needs to know is the URI of the requested resource — there is no other way to interact with the server. Likewise, the server cannot modify the client beyond delivering the requested data over HTTP.
+
+### 3. Statelessness
+
+A REST API is stateless. This means every request must contain all the information needed to process it. The server cannot store any data related to a request.
+
+### 4. Cacheability
+
+Where possible, resources should be cacheable on either the client or server side. Server responses must also include information about whether caching is allowed for the delivered resource.
+
+### 5. Layered System Architecture
+
+Calls and responses pass through multiple layers. Both the client and the server should be designed so that neither can tell whether it is communicating directly with the target application or through an intermediary.
+
+### 6. Code on Demand (Optional)
+
+Responses typically contain static resources, but when necessary, they may include executable code. In such cases, the code should only run on demand.
+
+# RESTful API Design Guide
+
+## Core Principles
+
+This is the heart of the matter — the answers to the questions I had while writing API specs.
+
+> So how do you actually design an API in a RESTful way?
+
+Two critical rules to follow when designing a REST API:
+
+1. URIs represent information resources.
+2. Actions on resources are expressed via HTTP methods.
+
+To put both rules in a single phrase:
+
+> URIs are nouns; HTTP methods are verbs.
+
+Let's look at a poorly designed example to see what this means. Suppose you're writing an API for Employees:
+
+- /getEmployee
+- /addNewEmployee
+- /updateEmployee
+- /deleteEmployee
+
+Designing an API like this creates multiple overlapping endpoints for the same resource (Employee), which makes the API harder to maintain over time.
+
+Now let's apply the REST API design principles.
+
+### 1. URIs represent information resources.
+
+A URI should represent an information resource — meaning it should only contain nouns (words that name a resource).
+
+With that in mind, all the URIs above can be collapsed into a single endpoint:
+
+- /employee
+
+One important thing to note: resources should always be plural in API endpoints.
+
+- /employees
+
+If you want to access a specific record (one item) within that resource, pass its ID in the URI:
+
+- /employees/34
+
+### 2. Actions on resources are expressed via HTTP methods.
+
+The create, read, update, and delete operations on the `employee` resource can then be expressed through HTTP methods:
+
+- GET /employees
+- POST /employees
+- PUT /employees
+- DELETE /employees
+
+## Naming Conventions
+
+The following naming conventions incorporate the core principles above:
+
+1. Use nouns (verbs are acceptable only for controller resources)
+2. Use lowercase
+3. Use plural nouns
+4. Use hyphens `-` as separators (no underscores `_`, no camelCase)
+5. Do not include a trailing slash at the end of a URL
+6. Do not include file extensions
+
+# Path Variable vs Query String
+
+Finally, let's wrap up with two ways to pass information through a URI when designing API endpoints.
+
+## Query String
+
+### Format
+
+```sql
+/users?id=123
+```
+
+> A query string is the part that comes after the `?`. It passes key-value pairs separated by `&` to the server and is mainly used for searching or filtering.
+
+### Example
+
+The query string format is something you see every day on sites like Google. When you type "안녕" into Google search, the URL you land on looks something like this:
+
+```
+https://www.google.com/search?q=%EC%95%88%EB%85%95&hl=ko&sxsrf=AB5stBhLgUC2AioEf25xkbx8i3rkaKfPdg%3A1690519689199&source=hp&ei=iUjDZPX9CZmy2roP0MaCuA0&iflsig=AD69kcEAAAAAZMNWmS0ZSde8d0-qp6ex5gVZDKBv5GfC&ved=0ahUKEwi15rvMzLCAAxUZmVYBHVCjANcQ4dUDCAs&uact=5&oq=%EC%95%88%EB%85%95&gs_lp=Egdnd3Mtd2l6IgbslYjrhZUyBBAjGCcyCBAuGIAEGLEDMgsQLhiABBixAxiDATILEC4YgAQYsQMYgwEyBRAuGIAEMggQLhiABBixAzIIEC4YgAQYsQMyCxAAGIAEGLEDGIMBMgQQLhgDMgQQABgDSJwMUEdYywtwAngAkAEBmAGAAqAB8geqAQUwLjMuMrgBA8gBAPgBAagCCsICBxAjGOoCGCfCAgcQIxiKBRgnwgIHEAAYigUYQ8ICDRAuGIAEGMcBGNEDGArCAgUQABiABA&sclient=gws-wiz
+```
+
+Right after `https://www.google.com/search`, you can see that pairs in the format `a=b` are chained together after the `?`, separated by `&` characters.
+
+Because query strings can carry multiple key-value pairs like this, they are primarily used for searching or filtering data.
+
+Here's an example URL from an online shopping site with filtering criteria applied:
+
+```
+https://www.example.com/products?category=women&item=t-shirt&sort=price_low_to_high
+```
+
+Looking at everything after the `?`, you can see three pairs of data — `category=women`, `item=t-shirt`, `sort=price_low_to_high` — which together express "search for women's t-shirts and sort by price low to high."
+
+## Path Variable
+
+```sql
+/user/123
+```
+
+Path variables are straightforward. Variable data is passed as part of the path itself. Use this approach when you want to identify a specific resource.
+
+##### Sources
+
+[https://aws.amazon.com/ko/what-is/api/](https://aws.amazon.com/ko/what-is/api/)
+
+[https://www.ibm.com/topics/rest-apis](https://www.ibm.com/topics/rest-apis)
+
+[https://wayhome25.github.io/etc/2017/11/26/restful-api-designing-guidelines/](https://wayhome25.github.io/etc/2017/11/26/restful-api-designing-guidelines/)
+
+[https://medium.com/@fullsour/when-should-you-use-path-variable-and-query-parameter-a346790e8a6d](https://medium.com/@fullsour/when-should-you-use-path-variable-and-query-parameter-a346790e8a6d)

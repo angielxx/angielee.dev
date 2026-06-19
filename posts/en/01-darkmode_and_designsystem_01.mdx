@@ -1,0 +1,135 @@
+---
+title: Building a Design System for Dark Mode - 1) Theory
+description: Let's learn the theory you need to implement dark mode
+date: "2023-06-26"
+category: "웹 성능"
+tags: []
+---
+
+# Starting the Series
+
+I went through three team projects at Samsung Youth Software Academy (SSAFY, 삼성 청년 소프트웨어 아카데미) and built a design system from scratch — including dark mode implementation — in two of those projects. A bit of context: SSAFY doesn't have dedicated designers, so it naturally falls on the frontend engineers to handle UI/UX design. Since I have a design background and some hands-on industry experience, I ended up owning both UI/UX design and frontend development across all my projects.
+
+Coming from a design background, I was naturally drawn to the intersection of design and frontend engineering. Implementing dark mode was one of my personal project goals, so from the very start I researched how to set up a design system that supports dark mode and how to translate it into code. I actually designed the entire design system in Figma and then brought it to life in code!
+
+### Who This Is For
+
+This series is written for frontend developers who, like me, have a strong interest in UI/UX or find themselves in a position where they need to design a system themselves — for instance, frontend developers at SSAFY handling design work on top of engineering.
+
+The series is planned as three parts:
+
+1. Design system theory needed to implement dark mode
+2. Building a design system for dark mode
+3. Implementing dark mode using the design system
+
+### Prerequisites
+
+1. [https://story.pxd.co.kr/1434](https://story.pxd.co.kr/1434)
+
+If you're new to design systems, I'd recommend reading the article above first. It will give you a solid understanding of what a design system is and why it matters.
+
+2. [https://www.designsystemsforfigma.com/](https://www.designsystemsforfigma.com/)
+
+If you want to see real-world examples of design systems, this link lets you browse publicly available Figma design systems from various brands. (It's a fun rabbit hole to explore.)
+
+![Uber's Design System](/images/post/darmode_01_uber.png)
+
+Uber's Design System
+
+# Why Dark Mode Matters
+
+Dark mode has many advantages, but the three most prominent are:
+
+1. Reduced eye strain
+2. Improved visibility and readability
+3. Energy savings
+
+Beyond these benefits, dark mode also enhances the overall user experience — users can choose the theme that works best for them and apply it to the application.
+
+# Core Theory of Dark Mode
+
+This section was heavily inspired by SOCAR's blog post [Dark Mode — Double Down on Your Design System! (Part 1)](https://tech.socarcorp.kr/design/2020/07/10/dark-mode-01.html).
+
+To implement dark mode properly, the two major reference points in the design system world are Apple's **Human Interface Guidelines (HIG)** and Google's **Material Design**. Both are legendary in the UI/UX field and worth knowing well.
+
+![https://cdn.shopify.com/s/files/1/0624/9381/9131/t/31/assets/human-interface-guidelines-human-interface-guidelines-design-apple-developer-1674694859939.png?v=1674694860](https://cdn.shopify.com/s/files/1/0624/9381/9131/t/31/assets/human-interface-guidelines-human-interface-guidelines-design-apple-developer-1674694859939.png?v=1674694860)
+
+![https://lh3.googleusercontent.com/njAw6ZMF6WzfvQoirrfVNMbSc8LHXMTawSd1zvMQRxnPhEzWKBG_POU_Gi5fCeB5ftB00co0V-52Fj2gqv9LWX6RRagds2SnYYorUZY5B5Glr8NWaw=w1400-v0](https://lh3.googleusercontent.com/njAw6ZMF6WzfvQoirrfVNMbSc8LHXMTawSd1zvMQRxnPhEzWKBG_POU_Gi5fCeB5ftB00co0V-52Fj2gqv9LWX6RRagds2SnYYorUZY5B5Glr8NWaw=w1400-v0)
+
+Google's Material Design provides more detailed guidance on dark mode than Apple's HIG. If you want to go deeper, check out the link below:
+
+[https://m2.material.io/design/color/dark-theme.html](https://m2.material.io/design/color/dark-theme.html)
+
+To save you some time, here are the key concepts distilled from these guidelines.
+
+## 1) Use a Semantic Color System
+
+![https://lh3.googleusercontent.com/tv7J2o4ZiSmLYwyBslBs_PLzKyzI8QUV5qdvHGfoAQn9r7pY4Hj5SmW27m3zUWeDtRSE8Cb5_5PQmkbavDfw7XbIL8EodIKZhilRdg=w1064-v0](https://lh3.googleusercontent.com/tv7J2o4ZiSmLYwyBslBs_PLzKyzI8QUV5qdvHGfoAQn9r7pY4Hj5SmW27m3zUWeDtRSE8Cb5_5PQmkbavDfw7XbIL8EodIKZhilRdg=w1064-v0)
+
+A semantic color system means naming each color according to its intended purpose and organizing them into a system. In the example above, colors are named by their role — `Primary`, `Secondary`, `Background`, and so on. In contrast, naming colors by their literal HEX values (e.g., `#1A1A1A`) would be a non-semantic approach.
+
+With a semantic color system, each role (e.g., background) maps to a corresponding color value per theme — white in light mode, black in dark mode. It's also worth keeping in mind that colors in UI design aren't purely aesthetic; they communicate information hierarchy and meaning.
+
+## 2) Higher Layers Use Lighter Surface Colors
+
+<video
+  src="https://kstatic.googleusercontent.com/files/9976752535996547e4486a11a5e6b17cb0dfc27541bab905752c1c9c725bc3d0d3ca91f6072752b8aff8b96f60aa5e5c4b0af474ac12c45912dce8373c6803cf"
+  controls
+  autoplay
+></video>
+
+In the default (light) theme, shadows convey elevation — how high a layer sits above the base surface. In dark mode, surface color takes on that role instead. This makes sense because shadows simply don't read well against dark backgrounds.
+
+Material Design even specifies exact values for this:
+
+![](/images/post/darmode_01_elevation.png)
+
+The diagram shows ten distinct elevation levels, each with a prescribed opacity value for the overlay. Rather than figuring this out from scratch, you can follow Material Design's system and define background colors by level — it works right out of the box.
+
+## 3) Background Color
+
+Apple's HIG and Google's Material Design take different approaches to background color in dark mode.
+
+![https://lh3.googleusercontent.com/wWTcU93BwGcU0B_pVHAUkMFj6jlM0CLPjJdax-Lv-sLo2uslQrrPSaxTEcUpGJVEA0m665bRfFgwTQX9OxQKbwqVtpinA72j4ceFcQ=w1064-v0](https://lh3.googleusercontent.com/wWTcU93BwGcU0B_pVHAUkMFj6jlM0CLPjJdax-Lv-sLo2uslQrrPSaxTEcUpGJVEA0m665bRfFgwTQX9OxQKbwqVtpinA72j4ceFcQ=w1064-v0)
+
+**Material Design** recommends using a dark gray rather than pure black as the base background. This allows for a wider range of colors and depth to be expressed, and it reduces the contrast between light text and the background, which in turn reduces eye strain.
+
+**HIG**, on the other hand, recommends pure black as the background — to create sharp contrast between text and layered elements. The reasoning is specific to Apple hardware: a black background blends seamlessly with the iPhone's bezel, creating a unified feel between the device and the UI.
+
+# One Important Thing to Keep in Mind
+
+Now that we've covered the core theory for building a design system, there's one last thing worth calling out:
+
+> Dark mode is not simply the inverse of the light mode color scheme!
+
+I'll be honest — I did invert the light mode colors for my own implementation. I simply didn't have enough time to fine-tune the dark mode palette with the care it deserved. But just know that inverting your light mode color system doesn't automatically preserve the same level of readability you had in light mode.
+
+SOCAR's example:
+
+![https://tech.socarcorp.kr/img/dark-mode-01/2_16.png](https://tech.socarcorp.kr/img/dark-mode-01/2_16.png)
+
+![https://tech.socarcorp.kr/img/dark-mode-01/2_17.png](https://tech.socarcorp.kr/img/dark-mode-01/2_17.png)
+
+You can see that body text readability drops in the dark mode screen.
+
+Given time constraints on the design side, I went with the inverted approach as a practical shortcut. But if you're a UI/UX designer or you want to push the polish of your design system further, I highly recommend taking the time to carefully calibrate your dark mode color palette.
+
+That wraps up the theoretical groundwork for building a design system and implementing dark mode!
+
+In the next post, I'll walk through the actual design system I used in my project and show you step by step how I put it together.
+
+<br />
+<br />
+<br />
+<br />
+<br />
+
+**References**
+
+[https://tech.socarcorp.kr/design/2020/07/10/dark-mode-01.html](https://tech.socarcorp.kr/design/2020/07/10/dark-mode-01.html)
+
+[https://blog.wishket.com/다크모드-ui-디자인의-원칙/](https://blog.wishket.com/%EB%8B%A4%ED%81%AC%EB%AA%A8%EB%93%9C-ui-%EB%94%94%EC%9E%90%EC%9D%B8%EC%9D%98-%EC%9B%90%EC%B9%99/)
+
+[https://m2.material.io/design/color/dark-theme.html#behavior](https://m2.material.io/design/color/dark-theme.html#behavior)
+
+[https://developer.apple.com/design/human-interface-guidelines/dark-mode](https://developer.apple.com/design/human-interface-guidelines/dark-mode)

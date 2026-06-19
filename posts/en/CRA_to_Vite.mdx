@@ -1,0 +1,391 @@
+---
+title: 'Migrating from CRA to Vite (feat. Reducing Deployment Time)'
+description: 'Why and how we migrated our bundler from Create React App to Vite'
+date: "2024-03-03"
+category: "개발 일반"
+tags: []
+---
+
+# Introduction
+
+Today I want to walk through how we migrated our company's frontend app from CRA to Vite. Our company has a well-established CI/CD pipeline that packages and builds both the frontend and backend apps together. The problem was that the frontend build was taking nearly twice as long as the server build, dragging down the overall build time.
+
+Waiting on builds was frustrating enough that I started looking for ways to fix it. I already use Vite for personal projects and love how fast it is, so I decided it was time to bring it into our production codebase.
+
+# Why Vite?
+
+### Faster Build Times
+
+- Vite uses Rollup under the hood with optimized build configuration, giving it a significant speed advantage over Webpack.
+
+### Faster Dev Server Startup and Hot Module Replacement
+
+- In development mode, Vite leverages native ES modules so the browser can resolve and cache modules directly, dramatically reducing initial load time and HMR speed.
+- Because Vite only reloads the modules that actually changed, UI updates are reflected in real time.
+
+# Migrating from CRA to Vite
+
+### 1) Install Vite and Required Dependencies
+
+```
+yarn add -D vite @vitejs/plugin-react vite-tsconfig-paths @svgr/rollup
+```
+
+- `@vitejs/plugin-react`: Adds the configuration needed to use React with Vite, enabling fast development and bundling for React apps.
+- `vite-tsconfig-paths`: Applies the path aliases defined in `tsconfig.json` to Vite as well. With this plugin, Vite recognizes the aliases configured in TypeScript settings when resolving module paths.
+- `@svgr/rollup`: Enables SVGR in the Rollup bundler. SVGR converts SVG files into React components, making it easy to manipulate and style SVGs in JSX. This Rollup plugin integrates SVGR into the project so SVG files are automatically transformed into React components.
+
+### 2) Create vite.config.ts
+
+```
+import react from '@vitejs/plugin-react';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import { defineConfig } from 'vite';
+import svgr from '@svgr/rollup';
+
+export default defineConfig({
+	plugins: [react(), tsconfigPaths(), svgr()],
+	server: {
+		port: 3000, // change server port number
+	},
+	define: {
+		global: '{}',  // replace global object with an empty object
+	},
+	build: {
+		outDir: 'build', // change build output folder name
+		assetsDir: 'static', // change assets folder name inside the build folder
+	},
+});
+```
+
+- **Port configuration**
+  - Vite's default port is 5173, so we update it to match the existing development environment.
+- **`define: { global: '{}' }`**
+  - This ensures the `global` object (used in Node.js environments) is available in the browser context, guaranteeing compatibility and allowing libraries or modules that depend on it to work correctly.
+- **Build folder configuration**
+  - Vite's default build output folder is `dist`, so we rename it to `build` to match our existing setup.
+  - Vite stores built static files under `dist/assets` by default, but our infrastructure serves built files from a folder named `static`, so we update it accordingly.
+  - This will vary by project, so treat it as a reference.
+
+### 3) Update index.html
+
+- Reference: [https://vitejs.dev/guide/#index-html-and-project-root](https://vitejs.dev/guide/#index-html-and-project-root)
+
+(This makes `index.html` the application entry point without any additional bundling step.)
+
+- Move `index.html` from the `public` folder to the project root.
+- Remove `%PUBLIC_URL%` references inside `index.html`:
+  - `<link rel="icon" href="/favicon.ico" />`
+- Update the `<body>` section of `index.html`:
+  - `<body> <div id="root"></div> <script type="module" src="/src/index.tsx"></script> </body>`
+
+### 4) Update tsconfig.json
+
+```
+{
+  "compilerOptions": {
+    "types": ["vite/client" "react", "react-dom", "node"], // add
+    "isolatedModules": true, // add
+	...
+
+  },
+  "include": ["vite.config.ts", ...] // add
+}
+```
+
+### 5) Update Environment Variables
+
+- Reference: [https://vitejs.dev/guide/env-and-mode.html](https://vitejs.dev/guide/env-and-mode.html)
+
+**Key Changes**
+
+- **Rename env variables**: Change the `REACT_APP_{variable name}` prefix to `VITE_{variable name}`.
+- **Update env variable access**: Replace `process.env.REACT_APP_{variable name}` with `import.meta.env.VITE_{variable name}`.
+- **Rename env files**: Standardize `.env` file names to `.env.[mode]` for each mode (dev, staging, prod, sysopdev, adminopdev, etc.).
+  - Examples:
+    - dev → `.env.local`
+    - staging → `.env.staging`
+    - prod → `.env.prod`
+    - sysopdev → `.env.sysopdev` (previously `.env.sysadmin.onprem.dev`)
+    - adminopdev → `.env.adminopdev` (previously `.env.admin.onprem.dev`)
+  - This may differ per project.
+
+These changes also require updating the logic that injects environment variables in the CI pipeline.
+
+### 6) Update Absolute Path Configuration
+
+> With `vite-tsconfig-paths`, absolute path settings defined in `tsconfig.json` are automatically applied to Vite.
+
+**AS-IS**
+
+The following absolute path setup was used and should continue to work:
+
+```
+// tsconfig.json
+{
+    //....
+    "baseUrl": "src",
+}
+```
+
+```
+// Example of absolute path usage
+import { isOnprem } from 'common/utils/envConst';
+import { paletteSDS, themeSDS } from 'design';
+import ManagementGuide from 'features/control/components/ManagementGuide';
+```
+
+**TO-BE**
+
+```
+// tsconfig.json
+{
+    //...
+    "baseUrl": "src",
+    "paths": {
+			"*": ["*"], // resolve all paths relative to src/
+			"common/*": ["common/*"],
+			"design/*": ["design/*"],
+			"features/*": ["features/*"],
+			"pages/*": ["pages/*"],
+			"routes/*": ["routes/*"],
+			"translation/*": ["translation/*"]
+    },
+}
+```
+
+### 7) Update package.json Scripts
+
+> Run scripts using `vite` instead of `react-scripts`
+
+**AS-IS**
+
+```
+{
+    //...
+	"start:dev": "env-cmd -f .env.dev react-scripts start",
+	"start:qa": "env-cmd -f .env.qa react-scripts start",
+	"start:staging": "env-cmd -f .env.staging react-scripts start",
+	"start:prod": "env-cmd -f .env.prod react-scripts start",
+	"start:opdev": "env-cmd -f .env.onprem.dev react-scripts start",
+	"start:local": "HTTPS=true SSL_CRT_FILE=_wildcard.stclab.com+2.pem SSL_KEY_FILE=_wildcard.stclab.com+2-key.pem HOST=0.0.0.0 env-cmd -f .env.local react-scripts start",
+	"build": "env-cmd -f .env react-scripts build",
+	"build:dev": "env-cmd -f .env.dev react-scripts build",
+	"build:qa": "env-cmd -f .env.qa react-scripts build",
+	"build:staging": "env-cmd -f .env.staging react-scripts build",
+	"build:prod": "GENERATE_SOURCEMAP=false env-cmd -f .env.prod react-scripts build",
+	"build:opdev": "env-cmd -f .env.onprem.dev react-scripts build",
+}
+```
+
+**TO-BE**
+
+```
+{
+    //...
+    "start:dev": "vite --mode dev",
+    "start:qa": "vite --mode qa",
+    "start:staging": "vite --mode staging",
+    "start:prod": "vite --mode prod",
+    "start:opdev": "vite --mode onprem",
+    "start:local": "vite",
+    "build": "tsc && vite build",
+    "build:dev": "tsc && vite build --mode dev",
+    "build:qa": "tsc && vite build --mode qa",
+    "build:staging": "tsc && vite build --mode staging",
+    "build:prod": "tsc && vite build --mode prod",
+    "build:opdev": "tsc && vite build --mode onprem",
+}
+```
+
+- Each script uses the env file matching its specified mode, so the env file names in the CI scripts need to be updated accordingly.
+
+### 8) Update CI Scripts
+
+> Update the generated environment variable file names
+
+**AS-IS**
+
+```
+// build-project.sh
+
+FILE_LIST=(
+  "conf/db_password.txt"
+  "conf/nginx.conf"
+  "conf/nginx.crt"
+  "conf/nginx.key"
+  "apps/console/.env.onprem.dev"
+  "apps/admin/.env.onprem.admin.dev"
+  "apps/sysadmin/.env.onprem.sysadmin.dev"
+)
+```
+
+**TO-BE**
+
+```
+// build-project.sh
+
+FILE_LIST=(
+  "conf/db_password.txt"
+  "conf/nginx.conf"
+  "conf/nginx.crt"
+  "conf/nginx.key"
+  "apps/console/.env.onprem" // renamed to match each mode name
+  "apps/admin/.env.adminopdev" // renamed to match each mode name
+  "apps/sysadmin/.env.sysopdev" // renamed to match each mode name
+)
+```
+
+> Update the injected environment variable names
+
+**AS-IS**
+
+```
+// build-fe-app.yml
+
+# Permission can be added at job level or workflow level
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+  actions: read # This is required for slack
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      CONSOLE_REACT_APP_BASE_URL: ...
+      CONSOLE_REACT_APP_RELEASE_ENV: ...
+      CONSOLE_REACT_APP_PRODUCT_MODE: ...
+      CONSOLE_REACT_APP_AGENT_URL: ...
+      CONSOLE_REACT_APP_SCP_CONSOLE_URL: ...
+```
+
+```
+// build-and-deploy-saas-fe-app.yml
+
+  build-and-push:
+    uses: ./.github/workflows/build-fe-app.yml
+    needs: [set-image-tag]
+    if: ${{ needs.set-image-tag.outputs.env != '' }}
+    with:
+      AWS_REGION: ap-northeast-2
+      ECR_REPO_NAME: fe-app
+      IMAGE_TAG: ${{ needs.set-image-tag.outputs.image-tag }}
+      FE_APP_ENV: |
+        {
+          "REACT_APP_BASE_URL": ...
+          "REACT_APP_RELEASE_ENV": ...
+          "REACT_APP_PRODUCT_MODE": ...
+          "REACT_APP_AGENT_URL": ...
+          "REACT_APP_SCP_CONSOLE_URL": ...
+        }
+```
+
+**TO-BE**
+
+```
+// build-fe-app.yml
+
+# Permission can be added at job level or workflow level
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+  actions: read # This is required for slack
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      CONSOLE_VITE_BASE_URL: ...
+      CONSOLE_VITE_RELEASE_ENV: ...
+      CONSOLE_VITE_PRODUCT_MODE: ...
+      CONSOLE_VITE_AGENT_URL: ...
+      CONSOLE_VITE_SCP_CONSOLE_URL: ...
+```
+
+```
+// build-and-deploy-saas-fe-app.yml
+
+  build-and-push:
+    uses: ./.github/workflows/build-fe-app.yml
+    needs: [set-image-tag]
+    if: ${{ needs.set-image-tag.outputs.env != '' }}
+    with:
+      AWS_REGION: ap-northeast-2
+      ECR_REPO_NAME: fe-app
+      IMAGE_TAG: ${{ needs.set-image-tag.outputs.image-tag }}
+      FE_APP_ENV: |
+        {
+          "VITE_BASE_URL": ...
+          "VITE_RELEASE_ENV": ...
+          "VITE_PRODUCT_MODE": ...
+          "VITE_AGENT_URL": ...
+          "VITE_SCP_CONSOLE_URL": ...
+```
+
+- Replace all `REACT_APP` prefixes with `VITE`.
+
+### 9) Remove Unused Dependencies
+
+This step isn't directly related to Vite, but it's something I added to further improve CI speed.
+
+```
+npx depcheck
+```
+
+Run this command to identify and remove packages that are no longer used.
+
+### Example Output
+
+```
+Unused dependencies
+* @testing-library/jest-dom
+* @testing-library/react
+* @testing-library/user-event
+* amazon-cognito-identity-js
+* buffer
+* html2canvas
+* jspdf
+* qs
+* react-google-recaptcha-v3
+* react-hook-form
+* styled-components
+* web-vitals
+Unused devDependencies
+* @babel/plugin-proposal-private-property-in-object
+* @storybook/addon-actions
+* @storybook/addon-essentials
+* @storybook/addon-interactions
+* @storybook/addon-links
+* @storybook/addon-mdx-gfm
+* @storybook/node-logger
+* @storybook/preset-create-react-app
+* @storybook/react
+* @storybook/react-webpack5
+* @storybook/testing-library
+* @tanstack/eslint-plugin-query
+* @types/jest
+* @types/react-google-recaptcha
+* @types/styled-components
+* vite-plugin-svgr
+Missing dependencies
+* eslint-plugin-react: ./.eslintrc
+* eslint-plugin-jsx-a11y: ./.eslintrc
+* eslint-plugin-react-hooks: ./.eslintrc
+* eslint-config-react-app: ./package.json
+* design: ./src/App.tsx
+* common: ./src/App.tsx
+* routes: ./src/App.tsx
+* google-spreadsheet: ./src/translation/getJaTranslations.js
+* features: ./src/routes/CommonRoute.tsx
+* pages: ./src/routes/CommonRoute.tsx
+```
+
+- Remove all packages listed under unused deps and unused devDeps.
+
+# Results
+
+- Before: 8–10 minutes
+- After: 3–4 minutes
+
+> Approximately 61% reduction in build time

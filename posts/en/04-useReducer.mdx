@@ -1,0 +1,150 @@
+---
+title: How and When to Use useReducer
+description: A look at the syntax and usage of useReducer, and when it makes sense to reach for it over useState.
+date: "2023-08-18"
+category: "React"
+tags: []
+---
+
+> This post is primarily based on translations and summaries from the official React documentation ([react.dev](https://react.dev/)).
+
+Working with React, I had always defaulted to useState out of habit. Wanting to use React's hooks more intentionally and in the right situations, I went back to study useReducer more carefully. Let's explore the basic syntax, how to use it, and when it's the right choice.
+
+# What is useReducer?
+
+`useReducer` is one of React's built-in hooks. It uses a reducer to manage a component's state logic, and is typically reached for when the state logic is more complex than what `useState` can handle cleanly. (More on this later.)
+
+# useReducer Syntax
+
+```jsx
+const [state, dispatch] = useReducer(reducer, initialArg, init?)
+```
+
+It's called at the top level of a component, like any other hook.
+
+```jsx
+import { useReducer } from 'react';
+
+function reducer(state, action) {
+  // ...
+}
+
+function MyComponent() {
+  const [state, dispatch] = useReducer(reducer, { age: 42 });
+  // ...
+```
+
+### Parameters
+
+- `reducer`: The reducer function that specifies how state gets updated. It must be a pure function, accept state and action as arguments, and return the next state value. Both state and action can be of any type.
+- `initialArg`: The initial value. Can be of any type. How the initial state is computed depends on the optional `init` argument below.
+- (optional) `init`: An initializer function that should return the initial state. If not provided, the initial state is set to `initialArg`. If provided, the initial state is set to the result of calling `init(initialArg)`.
+
+### Return Value
+
+`useReducer` returns an array with exactly two values:
+
+1. **Current state** — set to `init(initialArg)` or `initialArg` on the first render.
+2. **dispatch function** — a function that updates state to a new value and triggers a re-render.
+
+# The dispatch Function
+
+The `dispatch` function returned by `useReducer` updates state and triggers a re-render. You pass an action as its only argument.
+
+```jsx
+const [state, dispatch] = useReducer(reducer, { age: 42 });
+
+function handleClick() {
+  dispatch({ type: 'incremented_age' });
+  // ...
+```
+
+React determines the next state by calling the reducer function you provided with the current state and the action you dispatched.
+
+### Parameters
+
+- **action**: The action performed by the user. Can be any value. By convention, an action is typically an object with a `type` property that identifies it, optionally accompanied by additional properties carrying extra information.
+
+### Return Value
+
+`dispatch` returns nothing (`undefined`).
+
+# Caution: Unnecessarily Recreating Initial State
+
+React saves the initial state once and ignores it on subsequent renders.
+
+```jsx
+function createInitialState(username) {
+  // ...
+}
+
+function TodoList({ username }) {
+  const [state, dispatch] = useReducer(reducer, createInitialState(username));
+  // ...
+```
+
+Even though the result of `createInitialState(username)` is only used on the initial render, the function is still called on every render. This can be wasteful if it involves creating large arrays or performing expensive calculations.
+
+To fix this, pass the initializer function as the third argument instead:
+
+```jsx
+function createInitialState(username) {
+  // ...
+}
+
+function TodoList({ username }) {
+  const [state, dispatch] = useReducer(reducer, username, createInitialState);
+  // ...
+```
+
+This way, `username` is passed as an argument to `createInitialState` when computing the initial state.
+
+Rather than calling the function directly and passing its result as the initial value, you pass the initializer function and its argument separately — so the initial state is only computed once and never recreated after that.
+
+If you don't need any information to compute the initial state, you can pass `null` as the second argument instead of `username`.
+
+# `useState` vs `useReducer`
+
+At first glance, it might seem like a reducer is always the better choice over `useState` — but that's not necessarily true. Rather than thinking about it in terms of performance, the right lens is the complexity of your state management.
+
+Here are the key differences the official docs highlight between the two hooks.
+
+## 1. Code Size
+
+In typical cases, `useState` requires far less code to write since you don't need to define a separate reducer function and dispatch actions. However, if multiple event handlers update state in similar ways, consolidating that logic inside a reducer can actually reduce the overall amount of code.
+
+## 2. Readability
+
+`useState` is easy to read when state updates are simple. As the update logic grows more complex, though, readability suffers. `useReducer` lets you move that logic into the reducer, cleanly separating event handlers from state update logic.
+
+## 3. Debugging
+
+With `useState`, when a bug occurs during a state update it can be hard to tell where and why things went wrong. With `useReducer`, you can add console logs or throw errors inside the reducer to debug more effectively.
+
+## 4. Testing
+
+Because a reducer is a pure function that doesn't depend on the component, it can be tested in isolation.
+
+## 5. Personal Preference
+
+Ultimately, choosing between `useState` and `useReducer` is a matter of personal preference, and different developers will have different inclinations.
+
+# When Should You Use It?
+
+> So when is it actually appropriate to reach for `useReducer`?
+
+Honestly, when I went back to study `useReducer` this time, I was hoping to find some compelling, airtight reason to prefer it — something dramatic, like a massive performance difference or a fundamentally different mechanism under the hood. But there's no such silver bullet. (No huge performance gap, no radically different internal logic for state updates.)
+
+### 1. Managing Object or Array State
+
+When using `useState` with object or array state, you always have to pass a freshly copied value when updating, so that React's `Object.is` comparison can detect the change. The same rule applies with `useReducer` — you must not mutate the state directly — but since the conventional pattern for a reducer function is to create and return new state, `useReducer` tends to be more ergonomic when working with complex state structures.
+
+### 2. Centralizing State Update Logic
+
+When state updates are scattered across many event handlers, it hurts both readability and maintainability. `useReducer` lets you consolidate all state update logic into a single reducer that lives outside the component.
+
+---
+
+Reference
+
+[https://react.dev/learn/extracting-state-logic-into-a-reducer#comparing-usestate-and-usereducer](https://react.dev/learn/extracting-state-logic-into-a-reducer#comparing-usestate-and-usereducer)

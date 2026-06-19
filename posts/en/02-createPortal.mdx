@@ -1,0 +1,94 @@
+---
+title: What You Must Know When Using createPortal
+description: createPortal
+date: "2023-03-17"
+category: "React"
+tags: []
+---
+
+## What createPortal Does
+
+> It lets you render some children into a DOM node that exists outside the parent component's DOM hierarchy.
+
+## Syntax
+
+```javascript
+createPortal(children, domNode);
+```
+
+1. `children` : The element you want to send through the portal and render
+2. `domNode` : The DOM node at the location where you want to render `children`
+
+## Position in the React Tree vs. the DOM Tree
+
+> Although rendering happens outside the parent component, the portal child still sits beneath its original parent in React's render tree.
+
+A child component rendered via a portal is still a child of its original parent in React's component tree. **In other words, the child is still affected by its original parent component.** Events that occur in the child component still bubble up to the parent as well.
+
+However, the portal child is physically located outside the parent component's DOM hierarchy.
+
+## CSS Inheritance
+
+Because of this behavior, even a child element sent through a portal inherits the CSS of its parent component.
+
+```javascript
+const App = () => (
+  <div className="App">
+    App
+    <Modal>Modal</Modal>
+  </div>
+);
+```
+
+When a portal-based Modal is used inside the App component as shown above, Modal inherits App's CSS.
+
+If you don't want the Modal to inherit App's CSS, you can mount the portal outside of App.
+
+## Event Bubbling Through a Portal
+
+Normally, event bubbling travels up the DOM tree all the way to the root node.
+
+However, the React official docs explain it this way:
+
+> Features like context work exactly the same regardless of whether the child is a portal, because **the portal still exists in the React tree regardless of its position in the DOM tree**.
+
+> A portal's events propagate **following the React tree**, not the DOM tree.
+
+This means that even when a child element is sent through a portal, events fired inside the portal propagate up through the React tree — regardless of the DOM tree's structure.
+
+For example:
+
+```javascript
+const Modal = ({ children }) => (
+  <div className="Modal">
+    {children}
+    {/* Clicking this button will bubble the event up to the parent. */}
+    <button>Button</button>
+  </div>
+)
+
+const ProtalModal = () => React.DOM.createPortal(Modal, ...)
+
+const App = () => {
+  const handleClick = e => {
+    // The event fired from the button will be caught here.
+    console.log(e.target) // <button>
+  }
+  return (
+    <div className="App" onClick={handleClick}>
+      App
+      <PortalModal>Modal</PortalModal>
+    </div>
+  )
+}
+```
+
+Here, the click event fired by the button inside Modal can be caught by App and handled with `handleClick`.
+
+## Conclusion
+
+Using a portal means only the rendering position is reflected in the DOM tree — the React tree retains its original structure.
+
+#### References
+
+- [React Portal (Kim Jeonghwan's blog)](https://jeonghwan-kim.github.io/2022/06/02/react-portal)

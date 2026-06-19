@@ -1,0 +1,76 @@
+---
+title: Why Does Next.js Use the <Link> Component?
+description: How the <Link> component works in Next.js
+date: "2023-06-15"
+category: "Next.js"
+tags: []
+---
+
+In Next.js, you should use `<Link>` instead of `<a>` for navigating between routes.
+But why?
+
+The short answer: to compensate for the slow page transitions that are a known drawback of server-side rendering, and to improve overall performance.
+
+# \<Link\>?
+
+> \<Link\> is a React component that extends the HTML `<a>` tag to provide prefetching and client-side navigation between routes.
+
+Let's take a closer look at what prefetching and client-side navigation actually mean.
+
+## Prefetching
+
+When a Link component is visible within the browser's viewport, it automatically fetches the linked page in the background ahead of time. This is what allows clicking a Link to feel as fast as an SPA-style page transition.
+
+Without prefetching, the page would only be requested at the moment you click the link — meaning the transition would be delayed by however long the server takes to respond.
+
+## Client-side Navigation
+
+Client-side navigation means page transitions are handled by JavaScript, not by the browser's default behavior.
+
+That said, client-side navigation in Next.js is not the same as the SPA approach. Before diving into how Next.js handles page transitions, let's briefly look at the traditional approach and the SPA approach side by side.
+
+### The Traditional Approach (MPA)
+
+If you've studied MPAs (Multiple Page Applications), you've likely come across the classic drawback: "the screen flickers when navigating to a new page."
+
+Why does the screen flicker? Because every time you request a new page, the browser renders it from scratch.
+
+When you navigate to a new URL, the browser requests the HTML, CSS, and JS files needed to render that page from the server. It then goes through the full browser rendering pipeline — from parsing to painting — drawing the page from the ground up. That's why you see the flicker.
+
+### The SPA Style
+
+`react-router-dom` has its own `<Link>` component, but it doesn't wrap an `<a>` tag at all. It operates purely through JavaScript logic.
+
+### Next.js Page Transitions
+
+Next.js's `<Link>` component is best described as a hybrid of the SPA style and the traditional approach. It embeds an `<a>` tag internally, but when clicked, it intercepts the browser's default navigation and hands control over to JavaScript. This is what makes page transitions feel smooth and fast even though Next.js uses server-side rendering.
+
+# Why Link Uses the `<a>` Tag
+
+So why does `<Link>` bother using an `<a>` tag under the hood at all?
+
+There are three reasons: **accessibility**, **browser compatibility**, and **SEO**. Using an `<a>` tag provides meaningful benefits in all three areas.
+
+## Accessibility
+
+`<a>` is a semantic HTML tag that makes links meaningful on a structural level. It helps people with disabilities navigate and understand the web more easily, which is a core part of web accessibility.
+
+## Browser Compatibility
+
+`<a>` is supported across all modern browsers and is the standard way to create hyperlinks. This ensures consistent behavior regardless of the browser environment.
+
+## SEO
+
+Search engine crawlers follow `<a>` tags to discover and index pages across the web. Using `<a>` tags is therefore critical for search engine optimization.
+
+# Usage
+
+There is a difference in usage between version 13 and earlier versions.
+
+In version 13 and above, you no longer need to nest an `<a>` tag inside `<Link>` — it's already built in.
+
+# References
+
+[Next.js - Client Side Navigation vs. changes in html](https://stackoverflow.com/questions/64644248/next-js-client-side-navigation-vs-changes-in-html)
+
+[Learn | Next.js](https://nextjs.org/learn/basics/navigate-between-pages/link-component)

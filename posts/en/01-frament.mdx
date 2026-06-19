@@ -1,0 +1,136 @@
+---
+title: Why and How to Use React Fragment
+description: Let's explore why we use Fragment in React
+date: "2023-03-17"
+category: "React"
+tags: []
+---
+
+## When Do We Need Fragment?
+
+In React, it's common for a single component to return multiple elements. However, the return statement of a component must wrap all elements under a single top-level tag. If you use a `<div>` as that wrapper, it adds an unnecessary node to the DOM.
+
+> This is exactly where `Fragment` comes in — it lets you group multiple elements together without adding any extra nodes to the DOM!
+
+Let's look at a concrete example of this situation.
+
+## An Example Where Fragment Is Needed
+
+###### The example below is taken from the official React documentation.
+
+```javascript
+function Table() {
+  return (
+    <table>
+      <tr>
+        <Columns />
+      </tr>
+    </table>
+  );
+}
+```
+
+For this `Table` component to produce valid HTML, the `Columns` component must return only `<td>` elements.
+
+```javascript
+function Columns() {
+ return (
+        <td>Hello</td>
+        <td>World</td>
+    );
+}
+```
+
+Returning two or more elements from a return statement like this causes an error, so we typically wrap them in a `<div>`.
+
+```javascript
+function Columns() {
+  return (
+    <div>
+      <td>Hello</td>
+      <td>World</td>
+    </div>
+  );
+}
+```
+
+So what does the HTML output look like?
+
+```javascript
+<table>
+  <tr>
+    <div>
+      <td>Hello</td>
+      <td>World</td>
+    </div>
+  </tr>
+</table>
+```
+
+An unnecessary node gets added to the DOM.
+
+## Applying Fragment
+
+Let's replace `<div>` with `<Fragment>` in the example above.
+
+```javascript
+import React, { Fragment } from 'react';
+
+//...
+function Columns() {
+  return (
+    <Fragment>
+      <td>Hello</td>
+      <td>World</td>
+    </Fragment>
+  );
+}
+```
+
+With `<Fragment>` applied, the HTML output becomes:
+
+```javascript
+<table>
+  <tr>
+    <td>Hello</td>
+    <td>World</td>
+  </tr>
+</table>
+```
+
+The `<td>` tags are now direct children of `<tr>` — no unnecessary nodes added!
+
+### Using the key Prop
+
+You can pass a `key` to a Fragment. It is the only attribute that Fragment accepts.
+
+```javascript
+{
+  props.items.map((item) => (
+    // React will throw a key warning if `key` is missing
+    <React.Fragment key={item.id}>
+      <dt>{item.term}</dt>
+      <dd>{item.description}</dd>
+    </React.Fragment>
+  ));
+}
+```
+
+## Fragment Shorthand Syntax
+
+There is a shorthand that lets you use `Fragments` without importing them. Simply use empty tags: `<>...</>`.
+
+```javascript
+function Columns() {
+  return (
+    <>
+      <td>Hello</td>
+      <td>World</td>
+    </>
+  );
+}
+```
+
+### key Cannot Be Used with the Shorthand
+
+When using the Fragment shorthand syntax, you cannot pass a `key` prop.
