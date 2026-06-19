@@ -27,7 +27,7 @@ export default function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label={isDark ? "라이트 모드로 전환" : "다크 모드로 전환"}
-      className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--fg)] hover:bg-brand-50 transition-colors"
+      className="p-1.5 rounded-full border border-[var(--border)] text-brand-text-sub hover:text-brand-accent hover:border-brand-accent transition-colors"
     >
       {isDark ? (
         /* 해 아이콘 (다크 → 라이트) */

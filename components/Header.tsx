@@ -4,23 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CATEGORY_GROUPS } from "@/lib/categories";
+import { CATEGORY_GROUPS, getCategoryLabel, getGroupLabel } from "@/lib/categories";
 import { getLangFromPathname, type Lang } from "@/lib/i18n";
 import ThemeToggle from "@/components/ThemeToggle";
+import LangToggle from "@/components/LangToggle";
 
 export default function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const lang: Lang = getLangFromPathname(pathname);
-  const otherLang: Lang = lang === "ko" ? "en" : "ko";
-
-  // Replace the leading lang segment to build the other-lang URL
-  const otherLangPath = (() => {
-    const segs = pathname.split("/");
-    segs[1] = otherLang;
-    return segs.join("/") || `/${otherLang}`;
-  })();
 
   const isActive = (href: string) => pathname.startsWith(href);
 
@@ -85,7 +78,7 @@ export default function Header() {
                 {Object.entries(CATEGORY_GROUPS).map(([group, categories]) => (
                   <div key={group}>
                     <p className="px-3 pt-2 pb-1 text-[11px] font-bold text-brand-text-sub opacity-50 uppercase tracking-widest">
-                      {group}
+                      {getGroupLabel(group, lang)}
                     </p>
                     {categories.map((cat) => (
                       <Link
@@ -93,7 +86,7 @@ export default function Header() {
                         href={`/${lang}/blog?category=${encodeURIComponent(cat)}`}
                         className="block px-3 py-1.5 rounded-lg text-sm text-brand-text-main opacity-80 hover:bg-[var(--fg)]/5 hover:opacity-100 hover:text-brand-accent transition-colors"
                       >
-                        {cat}
+                        {getCategoryLabel(cat, lang)}
                       </Link>
                     ))}
                   </div>
@@ -123,30 +116,18 @@ export default function Header() {
             </Link>
           ))}
 
-          {/* 언어 토글 */}
-          <Link
-            href={otherLangPath}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-[var(--border)] text-xs font-bold text-brand-text-sub hover:text-brand-accent hover:border-brand-accent transition-colors"
-          >
-            {otherLang.toUpperCase()}
-          </Link>
-
+          <LangToggle />
           <ThemeToggle />
         </nav>
 
         {/* 모바일: 언어 토글 + 테마 토글 + 햄버거 버튼 */}
         <div className="lg:hidden flex items-center gap-1">
-          <Link
-            href={otherLangPath}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-[var(--border)] text-xs font-bold text-brand-text-sub hover:text-brand-accent hover:border-brand-accent transition-colors"
-          >
-            {otherLang.toUpperCase()}
-          </Link>
+          <LangToggle />
           <ThemeToggle />
           <button
             onClick={() => setMenuOpen((v) => !v)}
             aria-label={menuOpen ? "메뉴 닫기" : "메뉴 열기"}
-            className="p-2 -mr-2 text-brand-text-sub hover:text-brand-text-main transition-colors"
+            className="p-1.5 rounded-full border border-[var(--border)] text-brand-text-sub hover:text-brand-accent hover:border-brand-accent transition-colors"
           >
             <span className="sr-only">{menuOpen ? "닫기" : "메뉴"}</span>
             <div className="w-5 h-4 flex flex-col justify-between">
@@ -181,7 +162,7 @@ export default function Header() {
               {Object.entries(CATEGORY_GROUPS).map(([group, categories]) => (
                 <div key={group}>
                   <p className="px-3 pt-3 pb-1 text-[11px] font-bold text-brand-text-sub opacity-50 uppercase tracking-widest mt-1">
-                    {group}
+                    {getGroupLabel(group, lang)}
                   </p>
                   {categories.map((cat) => (
                     <Link
@@ -190,7 +171,7 @@ export default function Header() {
                       onClick={() => setMenuOpen(false)}
                       className="block px-3 py-2.5 rounded-lg text-brand-text-main opacity-80 hover:bg-[var(--fg)]/5 hover:opacity-100 hover:text-brand-accent transition-colors"
                     >
-                      {cat}
+                      {getCategoryLabel(cat, lang)}
                     </Link>
                   ))}
                 </div>
