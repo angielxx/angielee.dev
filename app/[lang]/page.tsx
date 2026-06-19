@@ -14,7 +14,8 @@ interface Props {
 export default async function Home({ params }: Props) {
   const { lang } = await params;
   const topSlugs = await getTopSlugs(3);
-  const featuredPosts = topSlugs.length > 0
+  const hasViewData = topSlugs.length > 0;
+  const featuredPosts = hasViewData
     ? topSlugs
         .map((slug) => { try { return getPostBySlug(slug, lang); } catch { return null; } })
         .filter((p) => p !== null)
@@ -23,8 +24,8 @@ export default async function Home({ params }: Props) {
 
   const t =
     lang === "ko"
-      ? { popular: "인기 글", latest: "최신 글", viewAll: "전체 보기" }
-      : { popular: "Popular", latest: "Latest", viewAll: "View All" };
+      ? { popular: hasViewData ? "인기 글" : "Featured", latest: "최신 글", viewAll: "전체 보기" }
+      : { popular: hasViewData ? "Popular" : "Featured", latest: "Latest", viewAll: "View All" };
 
   return (
     <>
