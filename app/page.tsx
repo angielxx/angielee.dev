@@ -1,10 +1,22 @@
 import Link from "next/link";
-import { getAllPosts, getFeaturedPosts } from "@/lib/posts";
+import { getAllPosts, getPostBySlug } from "@/lib/posts";
+import { getTopSlugs } from "@/lib/redis";
 import HeroSection from "@/components/HeroSection";
 import PostCard from "@/components/PostCard";
 
-export default function Home() {
-  const featuredPosts = getFeaturedPosts().slice(0, 3);
+export const revalidate = 3600;
+
+export default async function Home() {
+  const topSlugs = await getTopSlugs(3);
+  const featuredPosts = topSlugs
+    .map((slug) => {
+      try {
+        return getPostBySlug(slug);
+      } catch {
+        return null;
+      }
+    })
+    .filter((p) => p !== null);
   const latestPosts = getAllPosts().slice(0, 3);
 
   return (

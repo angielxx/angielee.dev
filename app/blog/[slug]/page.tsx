@@ -11,6 +11,7 @@ import TagBadge from "@/components/TagBadge";
 import SeriesNav from "@/components/SeriesNav";
 import TOC from "@/components/TOC";
 import CodeBlock from "@/components/CodeBlock";
+import ViewTracker from "@/components/ViewTracker";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -104,6 +105,7 @@ export default async function BlogPostPage({ params }: Props) {
 
   return (
     <>
+      <ViewTracker slug={slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
