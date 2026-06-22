@@ -49,7 +49,7 @@ export default function PostCard({ post, lang }: PostCardProps) {
           </div>
         )}
 
-        <div className={`p-5 flex flex-col gap-3 ${!thumbnail ? "border-l-2 border-brand-accent" : ""}`}>
+        <div className={`p-5 flex flex-col gap-3 h-full ${!thumbnail ? "border-l-2 border-brand-accent" : ""}`}>
           {/* 시리즈 배지 */}
           {series && (
             <span className="inline-flex items-center gap-1 text-xs font-bold bg-[var(--fg)]/10 text-brand-text-sub border border-[var(--border)] rounded-full px-2.5 py-0.5 w-fit">
